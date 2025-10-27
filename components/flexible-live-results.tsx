@@ -53,13 +53,30 @@ export function FlexibleLiveResults({ zone = 'all', showControls = true }: Flexi
           const matchesList = Object.entries(matchesData).map(([id, match]: [string, any]) => ({
             id,
             ...match,
+            // Normalize field names - handle both team1/team2 and teamA/teamB
+            teamA: match.teamA || match.team1 || 'Team A',
+            teamB: match.teamB || match.team2 || 'Team B',
+            scoreA: match.scoreA || match.score1 || 0,
+            scoreB: match.scoreB || match.score2 || 0,
             lastUpdated: match.lastUpdated || Date.now()
           }));
 
-          // Filter by zone if specified
-          const filteredMatches = zone === 'all' 
-            ? matchesList 
-            : matchesList.filter(match => match.zone === zone);
+          // Filter out dummy football matches and by zone
+          const filteredMatches = matchesList
+            .filter(match => {
+              // Skip dummy football matches
+              if (match.sport === 'Football' && 
+                  (!match.teamA || !match.teamB || 
+                   match.teamA === 'VS' || match.teamB === 'VS' ||
+                   match.teamA === '' || match.teamB === '' ||
+                   match.teamA === 'Team 1' || match.teamB === 'Team 2' ||
+                   match.teamA === 'Team A' || match.teamB === 'Team B')) {
+                console.log('🚫 Filtering out dummy football match:', match);
+                return false;
+              }
+              return true;
+            })
+            .filter(match => zone === 'all' || match.zone === zone);
 
           setMatches(filteredMatches);
           setLastUpdated(new Date());

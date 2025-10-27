@@ -1,0 +1,160 @@
+{
+  "rules": {
+    // 🚫 Default: block everything unless explicitly allowed
+    ".read": false,
+    ".write": false,
+
+    // 🏛️ Universities — public read (for stats + leaderboard)
+    "universities": {
+      ".read": true,
+      ".write": true,
+
+      "$uniId": {
+        ".read": true,
+        // ✏️ Allow write for:
+        //  - Verified admins
+        //  - Superadmin email (Arjun)
+        //  - The university creator (student rep)
+        ".write": "auth != null && (
+          root.child('admins').child(auth.uid).exists() ||
+          auth.token.email === 'arjun.ramdhan@nhsf.org.uk' ||
+          auth.uid === data.child('createdBy').val() ||
+          auth.uid === newData.child('createdBy').val()
+        )",
+
+        // ⚽ Sports inside each university
+        "sports": {
+          "$sportId": {
+            ".read": true,
+            ".write": "auth != null && (
+              root.child('admins').child(auth.uid).exists() ||
+              auth.token.email === 'arjun.ramdhan@nhsf.org.uk' ||
+              auth.uid === root.child('universities').child($uniId).child('createdBy').val()
+            )",
+
+            // 👥 Teams inside each sport
+            "teams": {
+              "$teamId": {
+                ".read": true, // public so stats & tables can read
+                ".write": "auth != null && (
+                  root.child('admins').child(auth.uid).exists() ||
+                  auth.token.email === 'arjun.ramdhan@nhsf.org.uk' ||
+                  auth.uid === root.child('universities').child($uniId).child('createdBy').val()
+                )",
+
+                // 👟 Players nested under each team
+                "players": {
+                  "$playerId": {
+                    ".read": true, // allow stats/leaderboard to see active players
+
+                    // ✅ Students can create their own players
+                    // ✅ Admins can edit any player (e.g. check-in, corrections)
+                    ".write": "auth != null && (
+                      root.child('admins').child(auth.uid).exists() ||
+                      auth.token.email === 'arjun.ramdhan@nhsf.org.uk' ||
+                      auth.uid === root.child('universities').child($uniId).child('createdBy').val()
+                    )",
+
+                    // ✅ Validation ensures player data stays structured
+                    ".validate": "newData.hasChildren(['firstName', 'lastName', 'email', 'sport']) &&
+                      (
+                        // Allow normal player creation/updates
+                        (
+                          newData.child('firstName').isString() &&
+                          newData.child('lastName').isString() &&
+                          newData.child('email').isString() &&
+                          newData.child('sport').isString()
+                        )
+                        ||
+                        // Allow admins to update check-in fields only
+                        (
+                          root.child('admins').child(auth.uid).exists() &&
+                          (
+                            data.child('checkedIn').val() != newData.child('checkedIn').val() ||
+                            data.child('checkedInBy').val() != newData.child('checkedInBy').val() ||
+                            data.child('checkedInAt').val() != newData.child('checkedInAt').val()
+                          )
+                        )
+                      )"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    // 👥 Top-level Players — Public read for stats, admin write
+    "players": {
+      ".read": true,
+      "$playerId": {
+        ".read": true,
+        ".write": "auth != null && (
+          root.child('admins').child(auth.uid).exists() ||
+          auth.token.email === 'arjun.ramdhan@nhsf.org.uk'
+        )"
+      }
+    },
+
+    // 👑 Admins — NHSF verified or superadmin email
+    "admins": {
+      ".read": "auth != null && (
+        root.child('admins').child(auth.uid).exists() ||
+        auth.token.email === 'arjun.ramdhan@nhsf.org.uk'
+      )",
+      ".write": "auth != null && (
+        root.child('admins').child(auth.uid).exists() ||
+        auth.token.email === 'arjun.ramdhan@nhsf.org.uk'
+      )"
+    },
+
+    // 🏆 Matches — public read for leaderboard, admin write
+    "matches": {
+      ".read": true,
+      "$sport": {
+        "$matchId": {
+          ".write": "auth != null && (
+            root.child('admins').child(auth.uid).exists() ||
+            auth.token.email === 'arjun.ramdhan@nhsf.org.uk'
+          )",
+          ".validate": "newData.hasChildren(['teamA', 'teamB', 'scoreA', 'scoreB', 'status'])"
+        }
+      }
+    },
+
+    // 🧾 Admin Requests — NHSF staff or superadmin (FIXED)
+    "adminRequests": {
+      "$reqId": {
+        ".read": "auth != null && (
+          root.child('admins').child(auth.uid).exists() ||
+          auth.token.email === 'arjun.ramdhan@nhsf.org.uk' ||
+          data.child('createdBy').val() === auth.uid
+        )",
+        ".write": "auth != null"
+      }
+    },
+
+    // ⚙️ Sports catalogue — public read, admin manage
+    "sports": {
+      ".read": true,
+      ".write": "auth != null && (
+        root.child('admins').child(auth.uid).exists() ||
+        auth.token.email === 'arjun.ramdhan@nhsf.org.uk'
+      )"
+    },
+
+    // 📊 Stats — auto-generated by Cloud Function, public read
+    "stats": {
+      ".read": true,
+      // Cloud Function has admin permissions, no client writes needed
+      ".write": false
+    },
+
+    // 🔧 System trigger — allow client to trigger Cloud Function
+    "system": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

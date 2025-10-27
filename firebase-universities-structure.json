@@ -1,0 +1,45 @@
+{
+  "universities": {
+    "uni-ast": {
+      "id": "uni-ast",
+      "name": "Aston",
+      "abbreviation": "AST",
+      "zone": "NZ+CZ",
+      "region": "NZ+CZ",
+      "email": "ast@nhsf-dharmic-games.com",
+      "contactPerson": "Aston Sports Secretary",
+      "status": "affiliated",
+      "isCompeting": false,
+      "sports": [],
+      "members": 0,
+      "wins": 0,
+      "losses": 0,
+      "points": 0,
+      "description": "Aston Hindu Society",
+      "tournamentDate": "Nov 22, 2025",
+      "createdAt": 1700000000000,
+      "lastUpdated": 1700000000000
+    },
+    "uni-bir": {
+      "id": "uni-bir",
+      "name": "Birmingham",
+      "abbreviation": "BIR",
+      "zone": "NZ+CZ",
+      "region": "NZ+CZ",
+      "email": "bir@nhsf-dharmic-games.com",
+      "contactPerson": "Birmingham Sports Secretary",
+      "status": "affiliated",
+      "isCompeting": false,
+      "sports": [],
+      "members": 0,
+      "wins": 0,
+      "losses": 0,
+      "points": 0,
+      "description": "University of Birmingham Hindu Society",
+      "tournamentDate": "Nov 22, 2025",
+      "createdAt": 1700000000000,
+      "lastUpdated": 1700000000000
+    }
+    // ... (continue for all 46 universities)
+  }
+}

@@ -60,20 +60,19 @@ export function checkAdminStatus(user: AdminUser | null): AdminCheckResult {
   const isZoneAdmin = user.role === 'zone_admin' || user.permissions?.canManageOwnZone;
   
   // Check email-based admin status (fallback for legacy users)
+  // Only specific emails get automatic admin access - others must request it
   const isEmailAdmin = user.email === 'arjunramdhan37@outlook.com' ||
                       user.email === 'arjun.ramdhan@nhsf.org.uk' ||
                       user.email === 'arjun.ramdhan.nhsf@gmail.com' ||
                       user.email === 'arjunramdhan37@gmail.com' ||
-                      user.email === 'pdevulapally0202@gmail.com' ||
-                      user.email?.includes('@nhsf.org.uk') ||
-                      user.email?.includes('@nhsf.uk');
+                      user.email === 'pdevulapally0202@gmail.com';
 
   // Debug logging
   console.log('🔐 Admin auth debug:', {
     email: user.email,
-    exactMatch: user.email === 'arjun.ramdhan@nhsf.org.uk',
-    includesNHSF: user.email?.includes('@nhsf.org.uk'),
-    isEmailAdmin
+    isEmailAdmin,
+    isSuperAdmin,
+    isZoneAdmin
   });
 
   // Primary admin check: role-based takes priority, with email fallback

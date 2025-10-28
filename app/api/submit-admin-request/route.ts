@@ -55,46 +55,46 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Admin request saved:', requestId);
 
-    // Send email notification to superadmin
+    // Send email notification to superadmin (optional - won't fail if email service is not configured)
     try {
-      const superadminEmail = process.env.SUPERADMIN_EMAIL || 'admin@nhsf-dharmic-games.com';
-      
-      const emailSubject = `New Admin Access Request - ${fullName}${university ? ` (${university})` : ''}`;
-      const emailBody = `
-        <h2>New Admin Access Request</h2>
-        <p>A new admin access request has been submitted:</p>
+      // Only try to send email if BREVO_API_KEY is configured
+      if (process.env.BREVO_API_KEY) {
+        const superadminEmail = process.env.SUPERADMIN_EMAIL || 'arjun.ramdhan.nhsf@gmail.com';
         
-        <h3>Request Details:</h3>
-        <ul>
-          <li><strong>Name:</strong> ${fullName}</li>
-          <li><strong>Email:</strong> ${email}</li>
-          <li><strong>University:</strong> ${university || 'Not provided'}</li>
-          <li><strong>Requested Zones:</strong> ${Object.keys(zones).filter(zone => zones[zone]).join(', ')}</li>
-          <li><strong>Requested At:</strong> ${new Date().toLocaleString()}</li>
-        </ul>
-        
-        ${reason ? `
-        <h3>Reason for Admin Access:</h3>
-        <p>${reason}</p>
-        ` : ''}
-        
-        <p><strong>Request ID:</strong> ${requestId}</p>
-        
-        <hr>
-        <p>Please log in to the superadmin dashboard to review and approve/reject this request.</p>
-        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/superadmin/requests">Review Admin Requests</a></p>
-      `;
+        const emailSubject = `New Admin Access Request - ${fullName}${university ? ` (${university})` : ''}`;
+        const emailBody = `
+          <h2>New Admin Access Request</h2>
+          <p>A new admin access request has been submitted:</p>
+          
+          <h3>Request Details:</h3>
+          <ul>
+            <li><strong>Name:</strong> ${fullName}</li>
+            <li><strong>Email:</strong> ${email}</li>
+            <li><strong>University:</strong> ${university || 'Not provided'}</li>
+            <li><strong>Requested Zones:</strong> ${Object.keys(zones).filter(zone => zones[zone]).join(', ')}</li>
+            <li><strong>Requested At:</strong> ${new Date().toLocaleString()}</li>
+          </ul>
+          
+          ${reason ? `
+          <h3>Reason for Admin Access:</h3>
+          <p>${reason}</p>
+          ` : ''}
+          
+          <p><strong>Request ID:</strong> ${requestId}</p>
+          
+          <hr>
+          <p>Please log in to the superadmin dashboard to review and approve/reject this request.</p>
+          <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://nhsf-dharmic-games.vercel.app'}/superadmin/requests">Review Admin Requests</a></p>
+        `;
 
-      await sendEmail({
-        to: superadminEmail,
-        subject: emailSubject,
-        html: emailBody
-      });
-
-      console.log('✅ Email notification sent to superadmin');
+        await sendEmail(superadminEmail, emailSubject, emailBody);
+        console.log('✅ Email notification sent to superadmin');
+      } else {
+        console.log('📧 Email service not configured - skipping email notification');
+      }
     } catch (emailError) {
       console.error('❌ Failed to send email notification:', emailError);
-      // Don't fail the request if email fails
+      // Don't fail the request if email fails - this is optional
     }
 
     return NextResponse.json({

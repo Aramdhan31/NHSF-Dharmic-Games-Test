@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { realtimeDb } from '@/lib/firebase';
-import { ref, push, set } from 'firebase/database';
+import { adminRealtimeDb } from '@/lib/firebase-admin';
 import { sendEmail } from '@/lib/sendEmail';
 
 export async function POST(request: NextRequest) {
@@ -48,12 +47,27 @@ export async function POST(request: NextRequest) {
       lastUpdated: Date.now()
     };
 
-    // Save to Firebase Realtime Database
-    const requestsRef = ref(realtimeDb, 'adminRequests');
-    const newRequestRef = push(requestsRef);
-    await set(newRequestRef, adminRequest);
-
-    console.log('✅ Admin request saved:', requestId);
+    // Save to Firebase Realtime Database using Admin SDK (bypasses security rules)
+    try {
+      if (!adminRealtimeDb) {
+        throw new Error('Firebase Admin Realtime Database not initialized');
+      }
+      
+      const requestsRef = adminRealtimeDb.ref('adminRequests');
+      const newRequestRef = requestsRef.push();
+      await newRequestRef.set(adminRequest);
+      console.log('✅ Admin request saved:', requestId);
+    } catch (firebaseError: any) {
+      console.error('❌ Firebase write error:', firebaseError);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Failed to save admin request',
+          details: firebaseError.message 
+        },
+        { status: 500 }
+      );
+    }
 
     // Send email notification to superadmin (optional - won't fail if email service is not configured)
     try {

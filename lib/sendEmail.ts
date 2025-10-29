@@ -1,10 +1,15 @@
 export async function sendEmail(to: string, subject: string, html: string) {
   try {
+    const apiKey = process.env.BREVO_API_KEY;
+    if (!apiKey) {
+      throw new Error('BREVO_API_KEY is not configured');
+    }
+
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
         'accept': 'application/json',
-        'api-key': process.env.BREVO_API_KEY!,
+        'api-key': apiKey,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
@@ -14,6 +19,11 @@ export async function sendEmail(to: string, subject: string, html: string) {
         htmlContent: html,
       }),
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Brevo API error: ${response.status} - ${JSON.stringify(errorData)}`);
+    }
 
     const data = await response.json();
     console.log('📧 Email sent successfully:', data);

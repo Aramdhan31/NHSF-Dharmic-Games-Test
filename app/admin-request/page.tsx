@@ -158,9 +158,12 @@ export default function AdminRequestPage() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="your.email@university.ac.uk (NHSF emails preferred)"
+                  placeholder="any.email@example.com"
                   className="mt-1"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 Any email address can be used. NHSF emails (<strong>@nhsf.org.uk</strong> or university emails) are recommended but not required.
+                </p>
               </div>
 
               <div>

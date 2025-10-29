@@ -1,9 +1,11 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
+import { getDatabase } from 'firebase-admin/database'
 
 // Initialize Firebase Admin SDK
 let adminApp
 let adminDb
+let adminRealtimeDb
 
 // Initialize Firebase Admin in all environments
 if (true) {
@@ -18,6 +20,7 @@ if (true) {
               clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
               privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
             }),
+            databaseURL: process.env.FIREBASE_DATABASE_URL || "https://nhsf-test-default-rtdb.firebaseio.com/"
           })
         : getApps()[0]
     } else {
@@ -25,12 +28,14 @@ if (true) {
       // Use default credentials (for local development with Firebase CLI)
       adminApp = getApps().length === 0 
         ? initializeApp({
-            projectId: process.env.FIREBASE_PROJECT_ID || "nhsf-test"
+            projectId: process.env.FIREBASE_PROJECT_ID || "nhsf-test",
+            databaseURL: process.env.FIREBASE_DATABASE_URL || "https://nhsf-test-default-rtdb.firebaseio.com/"
           })
         : getApps()[0]
     }
     
     adminDb = getFirestore(adminApp)
+    adminRealtimeDb = getDatabase(adminApp)
     console.log('Firebase Admin initialized successfully')
     
   } catch (error) {
@@ -39,19 +44,22 @@ if (true) {
     try {
       adminApp = getApps().length === 0 
         ? initializeApp({
-            projectId: "nhsf-test"
+            projectId: "nhsf-test",
+            databaseURL: "https://nhsf-test-default-rtdb.firebaseio.com/"
           })
         : getApps()[0]
       adminDb = getFirestore(adminApp)
+      adminRealtimeDb = getDatabase(adminApp)
       console.log('Firebase Admin fallback initialization successful')
     } catch (fallbackError) {
       console.error('Firebase Admin fallback initialization failed:', fallbackError)
       adminDb = null
+      adminRealtimeDb = null
     }
   }
 } else {
   console.log('Skipping Firebase Admin initialization during build')
 }
 
-export { adminDb }
+export { adminDb, adminRealtimeDb }
 export default adminApp

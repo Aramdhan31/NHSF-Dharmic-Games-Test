@@ -162,7 +162,7 @@ export default function AdminRequestPage() {
                   className="mt-1"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  💡 Any email address can be used. NHSF emails (<strong>@nhsf.org.uk</strong> or university emails) are recommended but not required.
+                  💡 Any email address can be used. NHSF admin emails (<strong>@nhsf.org.uk</strong>) are recommended but not required.
                 </p>
               </div>
 

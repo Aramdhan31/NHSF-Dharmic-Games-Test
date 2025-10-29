@@ -14,8 +14,7 @@ admin.initializeApp();
 /**
  * 🔥 Auto-recalculate stats when any data changes
  */
-exports.autoRecalculateStats = functions.database
-  .ref("/{path=**}")
+exports.autoRecalculateStats = functions.database.ref("/{path=**}")
   .onWrite(async (change, context) => {
     console.log("🔄 NHSF data changed, recalculating stats...");
     

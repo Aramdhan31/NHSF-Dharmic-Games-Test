@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function POST(request: NextRequest) {
   try {
     const { name, email, username, zone } = await request.json()
@@ -14,7 +12,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Only initialize Resend if API key is available
+    const RESEND_API_KEY = process.env.RESEND_API_KEY
+    if (!RESEND_API_KEY) {
+      console.warn('Resend API key not configured, skipping email send')
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Approval processed (email not sent - API key not configured)' 
+      })
+    }
 
+    const resend = new Resend(RESEND_API_KEY)
     const { data, error } = await resend.emails.send({
       from: 'NHSF Dharmic Games <noreply@nhsf-dharmic-games.vercel.app>',
       to: [email],

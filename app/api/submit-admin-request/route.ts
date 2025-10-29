@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
+    // Note: Any email address is accepted - no domain restrictions
     if (!fullName || !email) {
       return NextResponse.json(
         { success: false, error: 'Name and email are required' },

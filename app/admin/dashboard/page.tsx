@@ -40,6 +40,7 @@ import {
   Save,
   CheckCircle,
   XCircle,
+  X,
   Search,
   Filter,
   Download,
@@ -99,6 +100,12 @@ export default function AdminDashboardPage() {
   const [showAddPlayer, setShowAddPlayer] = useState(false)
   const [editingPlayer, setEditingPlayer] = useState<any>(null)
   const [editingUniversity, setEditingUniversity] = useState<any>(null)
+  const [admins, setAdmins] = useState<any[]>([])
+  const [loadingAdmins, setLoadingAdmins] = useState(false)
+  const [editingAdmin, setEditingAdmin] = useState<string | null>(null)
+  const [editAdminForm, setEditAdminForm] = useState<any>({})
+  const [showAddAdmin, setShowAddAdmin] = useState(false)
+  const [newAdmin, setNewAdmin] = useState({ email: '', password: '', name: '', role: 'admin', zones: [] as string[] })
   const [newUniversity, setNewUniversity] = useState({
     name: '',
     email: '',
@@ -341,7 +348,15 @@ export default function AdminDashboardPage() {
     }
     fetchAdminRequests()
 
-    const interval = adminCheck?.isSuperAdmin ? setInterval(fetchAdminRequests, 15000) : null
+      const interval = adminCheck?.isSuperAdmin ? setInterval(() => {
+        fetchAdminRequests()
+        fetchAdmins()
+      }, 15000) : null
+      
+      // Load admins on mount
+      if (adminCheck?.isSuperAdmin) {
+        fetchAdmins()
+      }
 
     // Cleanup function
     return () => {
@@ -1614,6 +1629,320 @@ export default function AdminDashboardPage() {
                       </Card>
                     ))}
                   </div>
+                </TabsContent>
+              )}
+
+              {/* User Management Tab (Superadmin only) */}
+              {adminCheck?.isSuperAdmin && (
+                <TabsContent value="management" className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold">Admin Management</h2>
+                    <Button onClick={() => setShowAddAdmin(true)}>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Add Admin
+                    </Button>
+                  </div>
+
+                  {/* Admin Statistics */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-2">
+                          <Users className="h-5 w-5 text-blue-500" />
+                          <div>
+                            <p className="text-2xl font-bold">{admins.length}</p>
+                            <p className="text-sm text-gray-600">Total Admins</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-2">
+                          <Crown className="h-5 w-5 text-yellow-500" />
+                          <div>
+                            <p className="text-2xl font-bold">{admins.filter((a: any) => a.role === 'super_admin').length}</p>
+                            <p className="text-sm text-gray-600">Super Admins</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-2">
+                          <Shield className="h-5 w-5 text-orange-500" />
+                          <div>
+                            <p className="text-2xl font-bold">{admins.filter((a: any) => a.role === 'admin').length}</p>
+                            <p className="text-sm text-gray-600">Regular Admins</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Admins List */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Crown className="h-5 w-5" />
+                        <span>Admins</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {loadingAdmins ? (
+                        <div className="text-center py-8">
+                          <Loader2 className="h-8 w-8 animate-spin text-orange-600 mx-auto mb-4" />
+                          <p className="text-gray-600">Loading admins...</p>
+                        </div>
+                      ) : admins.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Admins Found</h3>
+                          <p className="text-gray-600">Add your first admin to get started</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {admins.map((admin: any) => (
+                            <Card key={admin.email} className="hover:shadow-md transition-shadow">
+                              <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-4">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                      admin.role === 'super_admin' 
+                                        ? 'bg-gradient-to-r from-yellow-500 to-amber-600' 
+                                        : 'bg-gradient-to-r from-orange-500 to-red-600'
+                                    }`}>
+                                      {admin.role === 'super_admin' ? (
+                                        <Crown className="h-5 w-5 text-white" />
+                                      ) : (
+                                        <Shield className="h-5 w-5 text-white" />
+                                      )}
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center space-x-2">
+                                        <h3 className="font-semibold">{admin.name || admin.email}</h3>
+                                        <Badge className={
+                                          admin.role === 'super_admin'
+                                            ? 'bg-gradient-to-r from-yellow-500 to-amber-600 text-white'
+                                            : 'bg-gradient-to-r from-orange-500 to-red-600 text-white'
+                                        }>
+                                          {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                                        </Badge>
+                                      </div>
+                                      <p className="text-sm text-gray-600">{admin.email}</p>
+                                      <p className="text-xs text-gray-500">
+                                        Zones: {admin.zones?.join(', ') || 'All'} | 
+                                        Approved: {admin.approvedAt ? new Date(admin.approvedAt).toLocaleDateString() : 'N/A'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    {editingAdmin === admin.email ? (
+                                      <>
+                                        <Select
+                                          value={editAdminForm.role || admin.role}
+                                          onValueChange={(value) => setEditAdminForm({ ...editAdminForm, role: value })}
+                                        >
+                                          <SelectTrigger className="w-32">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="super_admin">Super Admin</SelectItem>
+                                            <SelectItem value="admin">Admin</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                        <Button
+                                          size="sm"
+                                          onClick={async () => {
+                                            try {
+                                              setProcessing(admin.email)
+                                              const res = await fetch('/api/admin-management', {
+                                                method: 'PUT',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                  email: admin.email,
+                                                  role: editAdminForm.role || admin.role,
+                                                  name: editAdminForm.name || admin.name,
+                                                  zones: editAdminForm.zones || admin.zones,
+                                                }),
+                                              })
+                                              if (!res.ok) throw new Error('Failed to update admin')
+                                              setMessage({ type: 'success', text: 'Admin updated successfully' })
+                                              setEditingAdmin(null)
+                                              setEditAdminForm({})
+                                              fetchAdmins()
+                                            } catch (e: any) {
+                                              setMessage({ type: 'error', text: e.message || 'Failed to update admin' })
+                                            } finally {
+                                              setProcessing(null)
+                                            }
+                                          }}
+                                          disabled={processing === admin.email}
+                                        >
+                                          {processing === admin.email ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                          ) : (
+                                            <Save className="h-4 w-4" />
+                                          )}
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            setEditingAdmin(null)
+                                            setEditAdminForm({})
+                                          }}
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            setEditingAdmin(admin.email)
+                                            setEditAdminForm({ role: admin.role, name: admin.name, zones: admin.zones })
+                                          }}
+                                        >
+                                          <Edit className="h-4 w-4 mr-1" />
+                                          Edit
+                                        </Button>
+                                        {admin.role !== 'super_admin' && admin.email !== user?.email && (
+                                          <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={async () => {
+                                              if (!confirm(`Are you sure you want to delete ${admin.email}?`)) return
+                                              try {
+                                                setProcessing(admin.email)
+                                                const res = await fetch(`/api/admin-management?email=${encodeURIComponent(admin.email)}`, {
+                                                  method: 'DELETE',
+                                                })
+                                                if (!res.ok) throw new Error('Failed to delete admin')
+                                                setMessage({ type: 'success', text: 'Admin deleted successfully' })
+                                                fetchAdmins()
+                                              } catch (e: any) {
+                                                setMessage({ type: 'error', text: e.message || 'Failed to delete admin' })
+                                              } finally {
+                                                setProcessing(null)
+                                              }
+                                            }}
+                                            disabled={processing === admin.email}
+                                          >
+                                            {processing === admin.email ? (
+                                              <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                              <Trash2 className="h-4 w-4" />
+                                            )}
+                                          </Button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Add Admin Modal */}
+                  {showAddAdmin && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                      <Card className="bg-white p-6 rounded-lg max-w-md w-full m-4">
+                        <CardHeader>
+                          <CardTitle>Add New Admin</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label>Email</Label>
+                            <Input
+                              type="email"
+                              value={newAdmin.email}
+                              onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                              placeholder="admin@example.com"
+                            />
+                          </div>
+                          <div>
+                            <Label>Password</Label>
+                            <Input
+                              type="password"
+                              value={newAdmin.password}
+                              onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                              placeholder="Enter password"
+                            />
+                          </div>
+                          <div>
+                            <Label>Name</Label>
+                            <Input
+                              value={newAdmin.name}
+                              onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })}
+                              placeholder="Admin Name"
+                            />
+                          </div>
+                          <div>
+                            <Label>Role</Label>
+                            <Select
+                              value={newAdmin.role}
+                              onValueChange={(value) => setNewAdmin({ ...newAdmin, role: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="super_admin">Super Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              className="flex-1"
+                              onClick={async () => {
+                                try {
+                                  setProcessing('new-admin')
+                                  const res = await fetch('/api/admin-management', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(newAdmin),
+                                  })
+                                  if (!res.ok) {
+                                    const errorData = await res.json()
+                                    throw new Error(errorData.error || 'Failed to create admin')
+                                  }
+                                  setMessage({ type: 'success', text: 'Admin created successfully' })
+                                  setShowAddAdmin(false)
+                                  setNewAdmin({ email: '', password: '', name: '', role: 'admin', zones: [] })
+                                  fetchAdmins()
+                                } catch (e: any) {
+                                  setMessage({ type: 'error', text: e.message || 'Failed to create admin' })
+                                } finally {
+                                  setProcessing(null)
+                                }
+                              }}
+                              disabled={processing === 'new-admin' || !newAdmin.email || !newAdmin.password}
+                            >
+                              {processing === 'new-admin' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                              Create Admin
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setShowAddAdmin(false)
+                                setNewAdmin({ email: '', password: '', name: '', role: 'admin', zones: [] })
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
                 </TabsContent>
               )}
 

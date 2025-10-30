@@ -73,17 +73,16 @@ export default function AdminLoginPage() {
   // Redirect if user is already logged in
   useEffect(() => {
     if (user && !loading) {
-      // Small delay to ensure user data is fully loaded
-      const timer = setTimeout(() => {
-        getRedirectPath(user).then((redirectPath) => {
-          console.log('🔐 Login redirect path:', redirectPath, 'for user:', user.email)
-          router.push(redirectPath)
-        })
-      }, 500) // Wait 500ms for role data to be available
+      // Wait a bit longer to ensure role is loaded from API
+      const timer = setTimeout(async () => {
+        const redirectPath = await getRedirectPath(user)
+        console.log('🔐 Login redirect path:', redirectPath, 'for user:', user.email, 'role:', user.role)
+        router.push(redirectPath)
+      }, 800) // Wait 800ms for role data to be available from API
       
       return () => clearTimeout(timer)
     }
-  }, [user, loading, router])
+  }, [user, loading, router, user?.role]) // Include user.role in dependencies
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

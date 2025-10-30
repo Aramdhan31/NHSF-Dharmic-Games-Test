@@ -88,17 +88,28 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
           if (userResult.success && userResult.data) {
             let userData = userResult.data as User;
             
-            // Also check admins collection via API to get the most up-to-date role
+            // ALWAYS check admins collection via API to get the most up-to-date role
+            // This is critical for regular admins to have the correct role set
             try {
               const roleRes = await fetch(`/api/get-admin-role?email=${encodeURIComponent(firebaseUser.email!)}`);
               if (roleRes.ok) {
                 const roleData = await roleRes.json();
+                console.log('🔐 Role data from API:', roleData);
                 if (roleData.success && roleData.role) {
                   // Override role from admins collection if it exists (more authoritative)
                   userData = {
                     ...userData,
                     role: roleData.role as any,
                   };
+                  console.log('✅ Role set from admins collection:', roleData.role);
+                } else if (roleData.success && roleData.adminData) {
+                  // If role not in response but adminData exists, user is admin
+                  // Use role from adminData or default to 'admin'
+                  userData = {
+                    ...userData,
+                    role: (roleData.adminData.role || 'admin') as any,
+                  };
+                  console.log('✅ Role set from adminData:', roleData.adminData.role || 'admin');
                 }
               }
             } catch (e) {
@@ -106,7 +117,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
               console.log('⚠️ Could not check admins collection:', e);
             }
             
+            // Set user with role included
             setUser(userData);
+            console.log('🔐 User set with role:', userData.role);
             // Update last login
             await userManagementService.updateLastLogin(userData.id);
           } else {

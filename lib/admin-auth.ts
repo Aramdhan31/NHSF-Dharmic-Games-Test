@@ -59,6 +59,8 @@ export function checkAdminStatus(user: AdminUser | null): AdminCheckResult {
   // ONLY users with explicit role='super_admin' are superadmins
   const isSuperAdmin = user.role === 'super_admin';
   const isZoneAdmin = user.role === 'zone_admin' || user.permissions?.canManageOwnZone;
+  // IMPORTANT: Users with role='admin' are regular admins
+  const isRegularAdmin = user.role === 'admin';
   
   // Check email-based admin status (fallback for legacy users)
   // Only specific emails get automatic admin access - others must request it
@@ -75,11 +77,13 @@ export function checkAdminStatus(user: AdminUser | null): AdminCheckResult {
     role: user.role,
     isEmailAdmin,
     isSuperAdmin,
-    isZoneAdmin
+    isZoneAdmin,
+    isRegularAdmin
   });
 
   // Primary admin check: role-based takes priority, with email fallback
-  const isAdmin = isSuperAdmin || isZoneAdmin || isEmailAdmin;
+  // IMPORTANT: Include isRegularAdmin so users with role='admin' are recognized as admins
+  const isAdmin = isSuperAdmin || isZoneAdmin || isRegularAdmin || isEmailAdmin;
 
   // Determine admin type
   let adminType: 'super_admin' | 'zone_admin' | 'email_admin' | 'none' = 'none';

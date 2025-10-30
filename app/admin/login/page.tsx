@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Mail, Lock, ArrowLeft, AlertCircle, Shield } from "lucide-react"
+import { Mail, Lock, ArrowLeft, AlertCircle, Shield, Loader2 } from "lucide-react"
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth"
 import { checkAdminStatus } from "@/lib/admin-auth"
 
@@ -86,17 +86,34 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate inputs
+    if (!email || !password) {
+      setError('Please enter both email and password')
+      return
+    }
+    
     setIsLoading(true)
     clearError()
     
-    const result = await signIn(email, password)
-    
-    if (result.success) {
-      // The useEffect will handle the redirect when user data is loaded
-      // No need to manually redirect here
+    try {
+      const result = await signIn(email.trim(), password)
+      
+      if (result.success) {
+        // Keep loading state while redirect happens
+        // The useEffect will handle the redirect when user data is loaded
+        console.log('✅ Sign in successful, waiting for redirect...')
+        // Don't set isLoading to false - let the redirect happen
+        return
+      } else {
+        // Sign in failed
+        setIsLoading(false)
+        setError(result.error || 'Sign in failed. Please check your credentials.')
+      }
+    } catch (error: any) {
+      setIsLoading(false)
+      setError(error.message || 'An error occurred during sign in. Please try again.')
     }
-    
-    setIsLoading(false)
   }
 
   return (
@@ -161,6 +178,8 @@ export default function AdminLoginPage() {
                     className="pl-10 h-12 text-sm sm:text-base"
                     autoComplete="username"
                     required
+                    disabled={isLoading}
+                    autoFocus
                   />
                 </div>
               </div>
@@ -180,6 +199,7 @@ export default function AdminLoginPage() {
                     className="pl-10 h-12 text-sm sm:text-base"
                     autoComplete="current-password"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -187,9 +207,16 @@ export default function AdminLoginPage() {
               <Button
                 type="submit"
                 className="w-full bg-orange-600 hover:bg-orange-700 h-12 text-sm sm:text-base"
-                disabled={isLoading}
+                disabled={isLoading || !email || !password}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
 

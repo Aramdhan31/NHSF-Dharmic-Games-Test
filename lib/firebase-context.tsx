@@ -188,7 +188,19 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
     
     setLoading(true);
     const result = await authUtils.signIn(email, password);
-    setLoading(false);
+    
+    // Don't set loading to false immediately - let the auth state change handler
+    // manage loading state as it loads user data from Firestore
+    // This ensures the role is loaded before redirect happens
+    if (result.success) {
+      // Loading will be set to false in the onAuthStateChange handler
+      // after user data (including role) is loaded
+      console.log('✅ Sign in successful, waiting for user data to load...');
+    } else {
+      // Only set loading to false if sign in failed
+      setLoading(false);
+    }
+    
     return result;
   };
 

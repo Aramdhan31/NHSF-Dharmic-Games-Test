@@ -21,12 +21,45 @@ export default function AdminLoginPage() {
   const router = useRouter()
   const { user, loading, error, signIn, clearError } = useFirebaseAuth()
 
+  // Function to check admin status by also querying admins collection
+  const checkAdminStatusWithApi = async (user: any) => {
+    if (!user || !user.email) return { isAdmin: false }
+    
+    // First check with current user data
+    let adminCheck = checkAdminStatus(user)
+    
+    // If already determined as admin, return early
+    if (adminCheck.isAdmin) {
+      return adminCheck
+    }
+    
+    // Also check admins collection via API for most up-to-date role
+    try {
+      const roleRes = await fetch(`/api/get-admin-role?email=${encodeURIComponent(user.email)}`)
+      if (roleRes.ok) {
+        const roleData = await roleRes.json()
+        if (roleData.success && roleData.role) {
+          // Override role from admins collection if it exists
+          const userWithRole = {
+            ...user,
+            role: roleData.role
+          }
+          adminCheck = checkAdminStatus(userWithRole)
+        }
+      }
+    } catch (e) {
+      console.log('⚠️ Could not check admins collection in login:', e)
+    }
+    
+    return adminCheck
+  }
+
   // Function to get redirect path based on user admin status
-  const getRedirectPath = (user: any) => {
+  const getRedirectPath = async (user: any) => {
     if (!user) return '/admin'
     
-    // Check admin status using the proper admin authentication
-    const adminCheck = checkAdminStatus(user)
+    // Check admin status (including API check for admins collection)
+    const adminCheck = await checkAdminStatusWithApi(user)
     
     // If user is any type of admin, go to dashboard
     if (adminCheck.isAdmin) {
@@ -40,8 +73,9 @@ export default function AdminLoginPage() {
   // Redirect if user is already logged in
   useEffect(() => {
     if (user && !loading) {
-      const redirectPath = getRedirectPath(user)
-      router.push(redirectPath)
+      getRedirectPath(user).then((redirectPath) => {
+        router.push(redirectPath)
+      })
     }
   }, [user, loading, router])
 

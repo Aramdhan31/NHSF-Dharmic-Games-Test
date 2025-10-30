@@ -132,22 +132,51 @@ export default function AdminDashboardPage() {
     mountedRef.current = true
   }, [])
 
-  // Check admin status on mount
+  // Check admin status on mount (also check admins collection via API)
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && user.email) {
       console.log('🔐 Checking admin status for user:', user.email)
-      const adminStatus = checkAdminStatus(user)
-      console.log('🔐 Admin status result:', adminStatus)
-      setAdminCheck(adminStatus)
       
-      if (!adminStatus.isAdmin) {
-        console.log('❌ User is not an admin, redirecting to /admin')
-        router.push('/admin')
-        return
+      // First check with current user data
+      let adminStatus = checkAdminStatus(user)
+      console.log('🔐 Admin status result (initial):', adminStatus)
+      
+      // Also check admins collection via API for most up-to-date role
+      const checkWithApi = async () => {
+        try {
+          const roleRes = await fetch(`/api/get-admin-role?email=${encodeURIComponent(user.email!)}`)
+          if (roleRes.ok) {
+            const roleData = await roleRes.json()
+            if (roleData.success && roleData.role) {
+              // Override role from admins collection if it exists (more authoritative)
+              const userWithRole = {
+                ...user,
+                role: roleData.role
+              }
+              adminStatus = checkAdminStatus(userWithRole)
+              console.log('🔐 Admin status result (after API check):', adminStatus)
+            }
+          }
+        } catch (e) {
+          console.log('⚠️ Could not check admins collection in dashboard:', e)
+        }
+        
+        setAdminCheck(adminStatus)
+        
+        if (!adminStatus.isAdmin) {
+          console.log('❌ User is not an admin, redirecting to /admin')
+          router.push('/admin')
+          return
+        }
+        
+        // Log admin access
+        logAdminAccess(user, adminStatus)
       }
       
-      // Log admin access
-      logAdminAccess(user, adminStatus)
+      checkWithApi()
+    } else if (!loading && !user) {
+      // No user, redirect to login
+      router.push('/admin/login')
     }
   }, [user, loading, router])
 

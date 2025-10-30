@@ -428,6 +428,11 @@ export default function AdminDashboardPage() {
   }
 
   const loadData = async () => {
+    // Check if user is superadmin
+    if (!adminCheck?.isSuperAdmin) {
+      setMessage({type: 'error', text: 'Only Super Admins can perform this action.'})
+      return
+    }
     try {
       setLoadingData(true)
       console.log('🔄 Loading admin data...')
@@ -826,6 +831,12 @@ export default function AdminDashboardPage() {
   }
 
   const initializeDatabase = async () => {
+    // Check if user is superadmin
+    if (!adminCheck?.isSuperAdmin) {
+      setMessage({type: 'error', text: 'Only Super Admins can perform this action.'})
+      return
+    }
+
     try {
       setInitializing(true)
       const response = await fetch('/api/initialize-database', {

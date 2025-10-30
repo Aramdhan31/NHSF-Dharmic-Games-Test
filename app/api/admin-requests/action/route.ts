@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { realtimeDb } from '@/lib/firebase';
-import { ref, get, update, set } from 'firebase/database';
+import { adminDb } from '@/lib/firebase-admin';
 import { sendEmail } from '@/lib/sendEmail';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +13,6 @@ export async function POST(req: NextRequest) {
       reviewedAt
     } = body;
 
-    // Validate required fields
     if (!requestId || !action || !reviewedBy) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
@@ -24,29 +20,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get the request from database
-    const requestsRef = ref(realtimeDb, 'adminRequests');
-    const snapshot = await get(requestsRef);
-    
-    if (!snapshot.exists()) {
+    if (!adminDb) {
       return NextResponse.json(
-        { success: false, error: 'No requests found' },
-        { status: 404 }
+        { success: false, error: 'Database not initialized' },
+        { status: 500 }
       );
     }
 
-    const data = snapshot.val();
-    const requestKey: string | undefined = Object.keys(data).find(key => data[key].id === requestId);
-    
-    if (!requestKey) {
+    // Load request doc
+    const docRef = adminDb.collection('adminRequests').doc(requestId);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
       return NextResponse.json(
         { success: false, error: 'Request not found' },
         { status: 404 }
       );
     }
 
-    const request: any = data[requestKey];
-    
+    const request = docSnap.data() as any;
     if (request.status !== 'pending') {
       return NextResponse.json(
         { success: false, error: 'Request has already been processed' },
@@ -55,179 +47,50 @@ export async function POST(req: NextRequest) {
     }
 
     // Update request status
-    const updatedRequest = {
-      ...request,
+    const updated = {
       status: action === 'approve' ? 'approved' : 'rejected',
       reviewedBy,
       reviewedAt,
       reviewNotes: reviewNotes || '',
       lastUpdated: Date.now()
     };
+    await docRef.update(updated);
 
-    // Update in database
-    const requestRef = ref(realtimeDb, `adminRequests/${requestKey}`);
-    await update(requestRef, updatedRequest);
-
-    // If approved, create Firebase Auth account and admin record
-    if (action === 'approve') {
-      try {
-        // Generate a temporary password for the admin
-        const tempPassword = `Admin${Math.random().toString(36).substring(2, 8)}!`;
-        
-        // Create Firebase Auth user
-        const userCredential = await createUserWithEmailAndPassword(auth, request.email, tempPassword);
-        const user = userCredential.user;
-        
-        // Update user profile
-        await updateProfile(user, {
-          displayName: request.name
-        });
-
-        // Create admin record in Realtime Database
-        const adminData = {
-          uid: user.uid,
-          email: request.email,
-          name: request.name,
-          university: request.university,
-          zone: request.zone,
-          role: request.role,
-          status: 'active',
-          permissions: {
-            canManageUsers: request.role === 'super-admin',
-            canManageAllZones: request.role === 'super-admin',
-            canManageOwnZone: true,
-            canViewAnalytics: true,
-            canUpdateResults: true,
-            canCreateMatches: true,
-            canManageUniversities: request.role === 'super-admin' || request.role === 'zone-admin'
-          },
-          approvedAt: Date.now(),
-          approvedBy: reviewedBy,
-          createdAt: Date.now()
-        };
-
-        // Save admin to admins collection
-        const adminsRef = ref(realtimeDb, `admins/${user.uid}`);
-        await set(adminsRef, adminData);
-
-        console.log(`✅ Admin account created for:`, request.email);
-        
-        // Update the email body to include login credentials
-        const emailBody = `
-          <h2>Admin Access Request Approved</h2>
-          
-          <p>Dear ${request.name},</p>
-          
-          <p>Congratulations! Your admin access request has been <strong>approved</strong>.</p>
-          
-          <p>You now have admin access to the NHSF Dharmic Games system.</p>
-          
-          <h3>Login Credentials:</h3>
-          <ul>
-            <li><strong>Email:</strong> ${request.email}</li>
-            <li><strong>Temporary Password:</strong> ${tempPassword}</li>
-          </ul>
-          
-          <p><strong>Important:</strong> Please change your password after your first login for security reasons.</p>
-          
-          <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/admin">Access Admin Dashboard</a></p>
-          
-          <h3>Request Details:</h3>
-          <ul>
-            <li><strong>Name:</strong> ${request.name}</li>
-            <li><strong>University:</strong> ${request.university}</li>
-            <li><strong>Zone:</strong> ${request.zone}</li>
-            <li><strong>Role:</strong> ${request.role}</li>
-            <li><strong>Requested At:</strong> ${new Date(request.requestedAt).toLocaleString()}</li>
-            <li><strong>Approved At:</strong> ${new Date(reviewedAt).toLocaleString()}</li>
-            <li><strong>Approved By:</strong> ${reviewedBy}</li>
-          </ul>
-          
-          ${reviewNotes ? `
-          <h3>Review Notes:</h3>
-          <p>${reviewNotes}</p>
-          ` : ''}
-          
-          <hr>
-          <p>Thank you for your interest in the NHSF Dharmic Games!</p>
-        `;
-
-        // Send approval email with credentials
-        await sendEmail(
-          request.email,
-          'Admin Access Approved - NHSF Dharmic Games',
-          emailBody
-        );
-
-      } catch (authError: any) {
-        console.error('❌ Failed to create admin account:', authError);
-        // Revert the request status
-        await update(requestRef, {
-          ...request,
-          status: 'pending',
-          lastUpdated: Date.now()
-        });
-        
-        return NextResponse.json({
-          success: false,
-          error: 'Failed to create admin account',
-          details: authError.message
-        }, { status: 500 });
-      }
-    } else {
-      // For rejected requests, send rejection email
-      const emailBody = `
-        <h2>Admin Access Request Rejected</h2>
-        
-        <p>Dear ${request.name},</p>
-        
-        <p>Unfortunately, your request for admin access has been rejected.</p>
-        
-        <h3>Request Details:</h3>
-        <ul>
-          <li><strong>Name:</strong> ${request.name}</li>
-          <li><strong>University:</strong> ${request.university}</li>
-          <li><strong>Zone:</strong> ${request.zone}</li>
-          <li><strong>Requested Role:</strong> ${request.role}</li>
-          <li><strong>Requested At:</strong> ${new Date(request.requestedAt).toLocaleString()}</li>
-          <li><strong>Reviewed At:</strong> ${new Date(reviewedAt).toLocaleString()}</li>
-          <li><strong>Reviewed By:</strong> ${reviewedBy}</li>
-        </ul>
-        
-        ${reviewNotes ? `
-        <h3>Review Notes:</h3>
-        <p>${reviewNotes}</p>
-        ` : ''}
-        
-        <p>If you believe this is an error or would like to discuss further, please contact the tournament organizers.</p>
-        
-        <hr>
-        <p>Thank you for your interest in the NHSF Dharmic Games!</p>
-      `;
-
-      await sendEmail(
-        request.email,
-        'Admin Access Request Rejected - NHSF Dharmic Games',
-        emailBody
-      );
+    // If approved, add to Firestore admins collection
+    if (action === 'approve' && request.email) {
+      const adminsRef = adminDb.collection('admins').doc(request.email);
+      await adminsRef.set({
+        email: request.email,
+        name: request.name || request.email,
+        role: 'admin',
+        zones: request.zones || [],
+        approvedAt: Date.now(),
+        approvedBy: reviewedBy
+      }, { merge: true });
     }
 
-    console.log(`✅ Request ${action}d:`, requestId);
+    // Optional email notification
+    try {
+      if (process.env.BREVO_API_KEY && request.email) {
+        const subject = action === 'approve' ? 'Your admin request was approved' : 'Your admin request was rejected';
+        const html = `
+          <h2>Admin Request ${action === 'approve' ? 'Approved' : 'Rejected'}</h2>
+          <p>Hi ${request.name || ''},</p>
+          <p>Your request for admin access has been <strong>${action === 'approve' ? 'approved' : 'rejected'}</strong>.</p>
+          ${reviewNotes ? `<p><strong>Notes:</strong> ${reviewNotes}</p>` : ''}
+        `;
+        await sendEmail(request.email, subject, html);
+      }
+    } catch (e) {
+      console.warn('Email notification failed:', e);
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: `Request ${action}d successfully`,
-      request: updatedRequest
-    });
+    return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error('❌ Error processing admin request:', error);
+    console.error('❌ Error processing admin request action:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to process admin request',
-        details: error.message 
-      },
+      { success: false, error: 'Failed to process request', details: error.message },
       { status: 500 }
     );
   }

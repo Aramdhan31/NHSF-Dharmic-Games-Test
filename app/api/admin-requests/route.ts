@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { realtimeDb } from '@/lib/firebase';
-import { ref, push, set, get } from 'firebase/database';
+import { adminDb } from '@/lib/firebase-admin';
 import { sendEmail } from '@/lib/sendEmail';
 
 export async function POST(request: NextRequest) {
@@ -28,6 +27,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!adminDb) {
+      return NextResponse.json(
+        { success: false, error: 'Database not initialized' },
+        { status: 500 }
+      );
+    }
+
     // Generate unique request ID
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -42,30 +48,26 @@ export async function POST(request: NextRequest) {
       reason,
       experience: experience || '',
       availability: availability || '',
-      userId,
-      userEmail,
+      userId: userId || '',
+      userEmail: userEmail || email,
       status: 'pending',
-      requestedAt,
+      requestedAt: requestedAt || new Date().toISOString(),
       createdAt: Date.now(),
       lastUpdated: Date.now()
     };
 
-    // Save to Firebase Realtime Database
-    const requestsRef = ref(realtimeDb, 'adminRequests');
-    const newRequestRef = push(requestsRef);
-    await set(newRequestRef, adminRequest);
+    // Save to Firestore
+    await adminDb.collection('adminRequests').doc(requestId).set(adminRequest);
 
-    console.log('✅ Admin request saved:', requestId);
+    console.log('✅ Admin request saved (Firestore):', requestId);
 
-    // Send email notification to superadmin
+    // Send email notification to superadmin (optional)
     try {
-      const superadminEmail = process.env.SUPERADMIN_EMAIL || 'admin@nhsf-dharmic-games.com';
-      
+      const superadminEmail = process.env.SUPERADMIN_EMAIL || 'arjun.ramdhan.nhsf@gmail.com';
       const emailSubject = `New Admin Access Request - ${name} (${university})`;
       const emailBody = `
         <h2>New Admin Access Request</h2>
         <p>A new admin access request has been submitted:</p>
-        
         <h3>Request Details:</h3>
         <ul>
           <li><strong>Name:</strong> ${name}</li>
@@ -73,36 +75,23 @@ export async function POST(request: NextRequest) {
           <li><strong>University:</strong> ${university}</li>
           <li><strong>Zone:</strong> ${zone}</li>
           <li><strong>Requested Role:</strong> ${role}</li>
-          <li><strong>Requested At:</strong> ${new Date(requestedAt).toLocaleString()}</li>
+          <li><strong>Requested At:</strong> ${new Date(adminRequest.requestedAt).toLocaleString()}</li>
         </ul>
-        
-        <h3>Reason for Admin Access:</h3>
-        <p>${reason}</p>
-        
-        ${experience ? `
-        <h3>Relevant Experience:</h3>
-        <p>${experience}</p>
-        ` : ''}
-        
-        ${availability ? `
-        <h3>Availability:</h3>
-        <p>${availability}</p>
-        ` : ''}
-        
+        ${reason ? `<h3>Reason for Admin Access:</h3><p>${reason}</p>` : ''}
+        ${experience ? `<h3>Relevant Experience:</h3><p>${experience}</p>` : ''}
+        ${availability ? `<h3>Availability:</h3><p>${availability}</p>` : ''}
         <p><strong>Request ID:</strong> ${requestId}</p>
-        
         <hr>
         <p>Please log in to the admin dashboard to review and approve/reject this request.</p>
-        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/superadmin/requests">Review Admin Requests</a></p>
+        <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://nhsf-dharmic-games.vercel.app'}/superadmin/requests">Review Admin Requests</a></p>
       `;
 
-      await sendEmail({
-        to: superadminEmail,
-        subject: emailSubject,
-        html: emailBody
-      });
-
-      console.log('✅ Email notification sent to superadmin');
+      if (process.env.BREVO_API_KEY) {
+        await sendEmail(superadminEmail, emailSubject, emailBody);
+        console.log('✅ Email notification sent to superadmin');
+      } else {
+        console.log('📧 Email service not configured - skipping email notification');
+      }
     } catch (emailError) {
       console.error('❌ Failed to send email notification:', emailError);
       // Don't fail the request if email fails
@@ -129,38 +118,28 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    if (!adminDb) {
+      return NextResponse.json(
+        { success: false, error: 'Database not initialized' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'all';
 
-    // Get all admin requests from Firebase
-    const requestsRef = ref(realtimeDb, 'adminRequests');
-    const snapshot = await get(requestsRef);
-    
-    if (!snapshot.exists()) {
-      return NextResponse.json({
-        success: true,
-        requests: []
-      });
-    }
+    const snapshot = await adminDb.collection('adminRequests').get();
 
-    const data = snapshot.val();
-    let requests = Object.values(data).map((request: any) => ({
-      ...request,
-      id: request.id || Object.keys(data).find(key => data[key] === request)
-    }));
+    const requestsRaw = snapshot.docs.map((doc) => doc.data());
+    let requests = requestsRaw as any[];
 
-    // Filter by status if specified
     if (status !== 'all') {
-      requests = requests.filter((request: any) => request.status === status);
+      requests = requests.filter((r: any) => r.status === status);
     }
 
-    // Sort by creation date (newest first)
-    requests.sort((a: any, b: any) => b.createdAt - a.createdAt);
+    requests.sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
 
-    return NextResponse.json({
-      success: true,
-      requests
-    });
+    return NextResponse.json({ success: true, requests });
 
   } catch (error: any) {
     console.error('❌ Error fetching admin requests:', error);

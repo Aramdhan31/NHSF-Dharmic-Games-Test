@@ -298,33 +298,21 @@ export default function AdminDashboardPage() {
       console.error('❌ Matches listener error:', error)
     })
 
-    // Admin requests listener (for superadmins)
-    let adminRequestsUnsubscribe: any = null
-    if (adminCheck?.isSuperAdmin) {
-      const adminRequestsRef = ref(realtimeDb, 'adminRequests')
-      adminRequestsUnsubscribe = onValue(adminRequestsRef, (snapshot) => {
-        try {
-          if (snapshot.exists()) {
-            const data = snapshot.val()
-            const requestsList = Object.values(data || {}) as any[]
-            // Ensure each request has a unique id
-            const requestsWithIds = requestsList.map((request, index) => ({
-              ...request,
-              id: request.id || `request-${index}-${Date.now()}`
-            }))
-            setAdminRequests(requestsWithIds)
-            console.log('📋 Admin requests updated:', requestsWithIds.length)
-            console.log('📋 Sample request:', requestsWithIds[0])
-          } else {
-            setAdminRequests([])
-          }
-        } catch (error) {
-          console.error('❌ Error in admin requests listener:', error)
-        }
-      }, (error) => {
-        console.error('❌ Admin requests listener error:', error)
-      })
+    // Admin requests - load via API (Admin SDK) instead of client RTDB
+    const fetchAdminRequests = async () => {
+      try {
+        if (!adminCheck?.isSuperAdmin) return
+        const res = await fetch('/api/admin-requests')
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        setAdminRequests(Array.isArray(data.requests) ? data.requests : (data.requests || data))
+      } catch (e) {
+        console.warn('Failed to fetch admin requests:', e)
+      }
     }
+    fetchAdminRequests()
+
+    const interval = adminCheck?.isSuperAdmin ? setInterval(fetchAdminRequests, 15000) : null
 
     // Cleanup function
     return () => {
@@ -334,9 +322,7 @@ export default function AdminDashboardPage() {
         universitiesUnsubscribe()
         playersUnsubscribe()
         matchesUnsubscribe()
-        if (adminRequestsUnsubscribe) {
-          adminRequestsUnsubscribe()
-        }
+        if (interval) clearInterval(interval as any)
       } catch (error) {
         console.error('❌ Error cleaning up listeners:', error)
       }
@@ -752,14 +738,18 @@ export default function AdminDashboardPage() {
   const handleApproveRequest = async (requestId: string) => {
     try {
       setProcessing(requestId)
-      const requestRef = ref(realtimeDb, `adminRequests/${requestId}`)
-      await update(requestRef, {
-        status: 'approved',
-        approvedAt: new Date().toISOString(),
-        approvedBy: user?.email
+      const res = await fetch('/api/admin-requests/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action: 'approve', reviewedBy: user?.email, reviewedAt: new Date().toISOString() })
       })
-      
+      const result = await res.json()
+      if (!res.ok || !result.success) throw new Error(result.error || 'Failed to approve')
       setMessage({type: 'success', text: 'Admin request approved!'})
+      // Refresh list
+      const refreshed = await fetch('/api/admin-requests')
+      const data = await refreshed.json()
+      setAdminRequests(data.requests || [])
     } catch (error) {
       console.error('Error approving request:', error)
       setMessage({type: 'error', text: 'Failed to approve request'})
@@ -771,14 +761,18 @@ export default function AdminDashboardPage() {
   const handleRejectRequest = async (requestId: string) => {
     try {
       setProcessing(requestId)
-      const requestRef = ref(realtimeDb, `adminRequests/${requestId}`)
-      await update(requestRef, {
-        status: 'rejected',
-        rejectedAt: new Date().toISOString(),
-        rejectedBy: user?.email
+      const res = await fetch('/api/admin-requests/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action: 'reject', reviewedBy: user?.email, reviewedAt: new Date().toISOString() })
       })
-      
+      const result = await res.json()
+      if (!res.ok || !result.success) throw new Error(result.error || 'Failed to reject')
       setMessage({type: 'success', text: 'Admin request rejected!'})
+      // Refresh list
+      const refreshed = await fetch('/api/admin-requests')
+      const data = await refreshed.json()
+      setAdminRequests(data.requests || [])
     } catch (error) {
       console.error('Error rejecting request:', error)
       setMessage({type: 'error', text: 'Failed to reject request'})
@@ -1379,24 +1373,28 @@ export default function AdminDashboardPage() {
                   {matches.map((match, index) => (
                     <Card key={match.id || `match-${index}`} className="hover:shadow-lg transition-shadow">
                       <CardHeader>
-                        <CardTitle className="text-lg">{match.sport}</CardTitle>
-                        <Badge variant="outline">{match.status}</Badge>
+                        <CardTitle className="text-lg">{match.title || match.sport || 'Match'}</CardTitle>
+                        {match.status && <Badge variant="outline">{match.status}</Badge>}
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium">{match.team1}</span>
+                            <span className="font-medium">{match.teamA || match.team1}</span>
                             <span className="text-gray-500">vs</span>
-                            <span className="font-medium">{match.team2}</span>
+                            <span className="font-medium">{match.teamB || match.team2}</span>
                           </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
-                            <Calendar className="h-4 w-4" />
-                            <span>{match.date}</span>
-                          </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
-                            <Clock className="h-4 w-4" />
-                            <span>{match.time}</span>
-                          </div>
+                          {match.date && (
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <Calendar className="h-4 w-4" />
+                              <span>{match.date}</span>
+                            </div>
+                          )}
+                          {match.time && (
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <Clock className="h-4 w-4" />
+                              <span>{match.time}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex space-x-2 mt-4">
                           <Button 

@@ -170,8 +170,10 @@ export default function AdminDashboardPage() {
         
         setAdminCheck(adminStatus)
         
+        // Double-check: if still not admin after API check, redirect
         if (!adminStatus.isAdmin) {
-          console.log('❌ User is not an admin, redirecting to /admin')
+          console.log('❌ User is not an admin after API check, redirecting to /admin')
+          console.log('🔐 Admin status details:', adminStatus)
           router.push('/admin')
           return
         }

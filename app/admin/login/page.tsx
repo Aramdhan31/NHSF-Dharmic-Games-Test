@@ -28,27 +28,27 @@ export default function AdminLoginPage() {
     // First check with current user data
     let adminCheck = checkAdminStatus(user)
     
-    // If already determined as admin, return early
-    if (adminCheck.isAdmin) {
-      return adminCheck
-    }
-    
-    // Also check admins collection via API for most up-to-date role
+    // Always check admins collection via API for most up-to-date role (even if already admin)
     try {
       const roleRes = await fetch(`/api/get-admin-role?email=${encodeURIComponent(user.email)}`)
       if (roleRes.ok) {
         const roleData = await roleRes.json()
         if (roleData.success && roleData.role) {
-          // Override role from admins collection if it exists
+          // Override role from admins collection if it exists (more authoritative)
           const userWithRole = {
             ...user,
             role: roleData.role
           }
           adminCheck = checkAdminStatus(userWithRole)
+          console.log('🔐 Admin check after API fetch:', adminCheck)
+        } else if (roleData.success && !roleData.role) {
+          // No role found in admins collection - but check if email-based admin
+          console.log('⚠️ No role found in admins collection, using email-based check')
         }
       }
     } catch (e) {
       console.log('⚠️ Could not check admins collection in login:', e)
+      // Continue with existing adminCheck if API fails
     }
     
     return adminCheck
@@ -73,9 +73,15 @@ export default function AdminLoginPage() {
   // Redirect if user is already logged in
   useEffect(() => {
     if (user && !loading) {
-      getRedirectPath(user).then((redirectPath) => {
-        router.push(redirectPath)
-      })
+      // Small delay to ensure user data is fully loaded
+      const timer = setTimeout(() => {
+        getRedirectPath(user).then((redirectPath) => {
+          console.log('🔐 Login redirect path:', redirectPath, 'for user:', user.email)
+          router.push(redirectPath)
+        })
+      }, 500) // Wait 500ms for role data to be available
+      
+      return () => clearTimeout(timer)
     }
   }, [user, loading, router])
 

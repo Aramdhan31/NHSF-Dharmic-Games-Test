@@ -70,6 +70,19 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
         
         // Load user data from Firestore (for admin users)
         try {
+          // Check approval status first
+          try {
+            const res = await fetch(`/api/check-admin-approval?email=${encodeURIComponent(firebaseUser.email!)}`)
+            const status = await res.json()
+            if (status?.pending && !status?.approved) {
+              await authUtils.signOut();
+              setUser(null);
+              setError('Your admin request is pending approval. Please try again later or contact the superadmin.');
+              setLoading(false);
+              return;
+            }
+          } catch {}
+
           const userResult = await userManagementService.getUserByEmail(firebaseUser.email!);
           if (userResult.success && userResult.data) {
             setUser(userResult.data as User);

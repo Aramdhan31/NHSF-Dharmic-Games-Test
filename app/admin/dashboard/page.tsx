@@ -820,6 +820,19 @@ export default function AdminDashboardPage() {
 
   const adminName = user?.displayName || user?.email?.split('@')[0] || 'Admin'
 
+  const handleHideFromRecent = async (university: any) => {
+    if (!adminCheck?.isSuperAdmin) return
+    try {
+      const universityRef = doc(db, "universities", university.id)
+      await updateDoc(universityRef, { hiddenFromRecent: true, lastUpdated: new Date() })
+      setUniversities(prev => prev.map(u => u.id === university.id ? { ...u, hiddenFromRecent: true } : u))
+      setMessage({ type: 'success', text: `${university.name} hidden from Recent Activity` })
+    } catch (e) {
+      console.error('Failed to hide from recent:', e)
+      setMessage({ type: 'error', text: 'Failed to update Recent Activity' })
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -890,7 +903,7 @@ export default function AdminDashboardPage() {
                   onClick={async () => {
                     try {
                       await signOut();
-                      router.push('/admin/login');
+                      router.replace('/admin/login');
                     } catch (error) {
                       console.error('Error signing out:', error);
                     }
@@ -917,7 +930,7 @@ export default function AdminDashboardPage() {
 
             {/* Main Content Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className={`grid w-full ${adminCheck?.isSuperAdmin ? 'grid-cols-8' : 'grid-cols-7'}`}>
+              <TabsList className={`grid w-full ${adminCheck?.isSuperAdmin ? 'grid-cols-8' : 'grid-cols-6'}`}>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="universities">Universities</TabsTrigger>
                 <TabsTrigger value="players">Players</TabsTrigger>
@@ -925,7 +938,7 @@ export default function AdminDashboardPage() {
                 <TabsTrigger value="scoring">Scoring</TabsTrigger>
                 <TabsTrigger value="live-scores">Live Scores</TabsTrigger>
                 {adminCheck?.isSuperAdmin && <TabsTrigger value="admin-requests">Admin Requests</TabsTrigger>}
-                <TabsTrigger value="settings">Settings</TabsTrigger>
+                {adminCheck?.isSuperAdmin && <TabsTrigger value="settings">Settings</TabsTrigger>}
               </TabsList>
 
               {/* Overview Tab */}
@@ -1006,16 +1019,15 @@ export default function AdminDashboardPage() {
                       <Button 
                         onClick={loadData}
                         disabled={loadingData}
-                        className="h-20 flex flex-col items-center justify-center space-y-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                        className={`h-20 flex flex-col items-center justify-center space-y-2 ${adminCheck?.isSuperAdmin ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700' : 'hidden'}`}
                       >
                         {loadingData ? <Loader2 className="h-6 w-6 animate-spin" /> : <RefreshCw className="h-6 w-6" />}
                         <span className="text-sm font-medium">Refresh Data</span>
                       </Button>
-                      
                       <Button 
                         onClick={initializeDatabase}
                         disabled={initializing}
-                        className="h-20 flex flex-col items-center justify-center space-y-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                        className={`h-20 flex flex-col items-center justify-center space-y-2 ${adminCheck?.isSuperAdmin ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700' : 'hidden'}`}
                       >
                         {initializing ? <Loader2 className="h-6 w-6 animate-spin" /> : <Database className="h-6 w-6" />}
                         <span className="text-sm font-medium">Initialize DB</span>
@@ -1034,7 +1046,7 @@ export default function AdminDashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {universities.slice(0, 3).map((uni, index) => (
+                      {universities.filter(uni => !uni.hiddenFromRecent).slice(0, 3).map((uni, index) => (
                         <div key={uni.id || `uni-${index}`} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                           <div className="p-2 bg-orange-100 rounded-full">
                             <Building2 className="h-4 w-4 text-orange-600" />
@@ -1044,6 +1056,16 @@ export default function AdminDashboardPage() {
                             <p className="text-sm text-gray-500">{uni.zone} • {uni.sports?.length || 0} sports</p>
                           </div>
                           <Badge variant="outline">{uni.status}</Badge>
+                          {adminCheck?.isSuperAdmin && (
+                            <div className="flex items-center space-x-2 ml-2">
+                              <Button size="sm" variant="outline" onClick={() => setEditingUniversity(uni)}>
+                                <Edit className="h-4 w-4 mr-1" /> Edit
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleHideFromRecent(uni)}>
+                                <XCircle className="h-4 w-4 mr-1" /> Hide
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1535,60 +1557,62 @@ export default function AdminDashboardPage() {
               )}
 
               {/* Settings Tab */}
-              <TabsContent value="settings" className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">Settings</h2>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Database Management</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <Button 
-                        onClick={initializeDatabase}
-                        disabled={initializing}
-                        className="w-full"
-                      >
-                        {initializing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Database className="h-4 w-4 mr-2" />}
-                        Initialize Database
-                      </Button>
-                      <Button 
-                        onClick={loadData}
-                        disabled={loadingData}
-                        variant="outline"
-                        className="w-full"
-                      >
-                        {loadingData ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                        Refresh Data
-                      </Button>
-                    </CardContent>
-                  </Card>
+              {adminCheck?.isSuperAdmin && (
+                <TabsContent value="settings" className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold">Settings</h2>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Database Management</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <Button 
+                          onClick={initializeDatabase}
+                          disabled={initializing}
+                          className="w-full"
+                        >
+                          {initializing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Database className="h-4 w-4 mr-2" />}
+                          Initialize Database
+                        </Button>
+                        <Button 
+                          onClick={loadData}
+                          disabled={loadingData}
+                          variant="outline"
+                          className="w-full"
+                        >
+                          {loadingData ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                          Refresh Data
+                        </Button>
+                      </CardContent>
+                    </Card>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>System Status</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Firebase Connection</span>
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-2 h-2 rounded-full ${firebaseAvailable ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                          <span className="text-sm">{firebaseAvailable ? 'Online' : 'Offline'}</span>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>System Status</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Firebase Connection</span>
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${firebaseAvailable ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                            <span className="text-sm">{firebaseAvailable ? 'Online' : 'Offline'}</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Real-time Updates</span>
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-2 h-2 rounded-full ${realtimeConnected ? 'bg-blue-500' : 'bg-gray-400'}`}></div>
-                          <span className="text-sm">{realtimeConnected ? 'Active' : 'Inactive'}</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Real-time Updates</span>
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${realtimeConnected ? 'bg-blue-500' : 'bg-gray-400'}`}></div>
+                            <span className="text-sm">{realtimeConnected ? 'Active' : 'Inactive'}</span>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+              )}
             </Tabs>
           </div>
         </div>

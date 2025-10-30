@@ -73,18 +73,16 @@ export default function AdminRequestPage() {
       if (response.ok && result.success) {
         setMessage({
           type: 'success',
-          text: '✅ Request submitted! You will be able to sign in once approved.'
+          text: '✅ Thank you! Your admin request was submitted. You can log in once approved.'
         })
         setFormData({
           fullName: '',
           email: '',
           password: '',
           confirmPassword: '',
-          zones: {
-            'NZ+CZ': false,
-            'LZ+SZ': false
-          }
+          zones: { 'NZ+CZ': false, 'LZ+SZ': false }
         })
+        setTimeout(() => router.replace('/admin/login'), 1200)
       } else {
         setMessage({
           type: 'error',
@@ -112,22 +110,12 @@ export default function AdminRequestPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="bg-white/80 backdrop-blur-sm border-orange-200 shadow-xl">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="p-3 bg-orange-100 rounded-full">
-                <Shield className="h-8 w-8 text-orange-600" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">
-              Request Admin Access
-            </CardTitle>
-            <p className="text-gray-600 mt-2">
-              Submit a request to become an admin for the NHSF Dharmic Games
-            </p>
+      <div className="w-full max-w-3xl">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl">Request Admin Access</CardTitle>
+            <p className="text-sm text-gray-600">Complete the form below to request NHSF Dharmic Games admin access.</p>
           </CardHeader>
-          
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>

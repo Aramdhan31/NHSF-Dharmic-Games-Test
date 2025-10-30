@@ -114,9 +114,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
                   id: firebaseUser.uid,
                   email: firebaseUser.email || '',
                   displayName: firebaseUser.displayName || firebaseUser.email || 'Admin',
-                  role: 'super_admin'
+                  role: 'admin'
                 } as any);
-                // Do NOT sign out; allow superadmin/email-admin fallback to work
+                // Do NOT sign out; allow email-admin fallback to work
               }
             }, 5000);
           }

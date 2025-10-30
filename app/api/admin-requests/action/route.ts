@@ -1,97 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { sendEmail } from '@/lib/sendEmail';
+import { getAuth } from 'firebase-admin/auth';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const {
-      requestId,
-      action,
-      reviewedBy,
-      reviewNotes,
-      reviewedAt
-    } = body;
+    const { requestId, action, reviewedBy, reviewNotes, reviewedAt } = body;
 
     if (!requestId || !action || !reviewedBy) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
-
     if (!adminDb) {
-      return NextResponse.json(
-        { success: false, error: 'Database not initialized' },
-        { status: 500 }
-      );
+      return NextResponse.json({ success: false, error: 'Database not initialized' }, { status: 500 });
     }
 
-    // Load request doc
     const docRef = adminDb.collection('adminRequests').doc(requestId);
-    const docSnap = await docRef.get();
-
-    if (!docSnap.exists) {
-      return NextResponse.json(
-        { success: false, error: 'Request not found' },
-        { status: 404 }
-      );
+    const snap = await docRef.get();
+    if (!snap.exists) {
+      return NextResponse.json({ success: false, error: 'Request not found' }, { status: 404 });
     }
 
-    const request = docSnap.data() as any;
+    const request = snap.data() as any;
     if (request.status !== 'pending') {
-      return NextResponse.json(
-        { success: false, error: 'Request has already been processed' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Request already processed' }, { status: 400 });
     }
 
-    // Update request status
-    const updated = {
+    // Update status first
+    await docRef.update({
       status: action === 'approve' ? 'approved' : 'rejected',
       reviewedBy,
       reviewedAt,
       reviewNotes: reviewNotes || '',
-      lastUpdated: Date.now()
-    };
-    await docRef.update(updated);
+      lastUpdated: Date.now(),
+    });
 
-    // If approved, add to Firestore admins collection
     if (action === 'approve' && request.email) {
-      const adminsRef = adminDb.collection('admins').doc(request.email);
-      await adminsRef.set({
+      const auth = getAuth();
+
+      // If we have a passwordHash (bcrypt), import user so they can sign in immediately
+      if (request.passwordHash) {
+        try {
+          // Delete any existing user with same email to avoid import conflict
+          try { const existing = await auth.getUserByEmail(request.email); if (existing?.uid) await auth.deleteUser(existing.uid); } catch {}
+
+          const uid = `admin_${Buffer.from(request.email).toString('hex').slice(0, 24)}`;
+          await auth.importUsers([
+            {
+              uid,
+              email: request.email,
+              emailVerified: true,
+              displayName: request.name || request.email,
+              passwordHash: Buffer.from(request.passwordHash),
+            }
+          ], { hash: { algorithm: 'BCRYPT' } });
+        } catch (e) {
+          // Fallback: if import fails, leave account creation to a reset link path
+        }
+      } else {
+        // No hash stored; skip
+      }
+
+      // Add to admins collection (Firestore)
+      await adminDb.collection('admins').doc(request.email).set({
         email: request.email,
         name: request.name || request.email,
         role: 'admin',
         zones: request.zones || [],
         approvedAt: Date.now(),
-        approvedBy: reviewedBy
+        approvedBy: reviewedBy,
       }, { merge: true });
-    }
-
-    // Optional email notification
-    try {
-      if (process.env.BREVO_API_KEY && request.email) {
-        const subject = action === 'approve' ? 'Your admin request was approved' : 'Your admin request was rejected';
-        const html = `
-          <h2>Admin Request ${action === 'approve' ? 'Approved' : 'Rejected'}</h2>
-          <p>Hi ${request.name || ''},</p>
-          <p>Your request for admin access has been <strong>${action === 'approve' ? 'approved' : 'rejected'}</strong>.</p>
-          ${reviewNotes ? `<p><strong>Notes:</strong> ${reviewNotes}</p>` : ''}
-        `;
-        await sendEmail(request.email, subject, html);
-      }
-    } catch (e) {
-      console.warn('Email notification failed:', e);
     }
 
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
     console.error('❌ Error processing admin request action:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to process request', details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to process request', details: error.message }, { status: 500 });
   }
 }

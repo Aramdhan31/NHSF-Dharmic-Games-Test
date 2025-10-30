@@ -7,14 +7,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       fullName,
-      university,
       email,
-      reason,
-      zones
+      zones,
+      password
     } = body;
 
-    // Validate required fields
-    // Note: Any email address is accepted - no domain restrictions
     if (!fullName || !email) {
       return NextResponse.json(
         { success: false, error: 'Name and email are required' },
@@ -22,11 +19,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if at least one zone is selected
     const selectedZones = Object.values(zones || {}).some((selected: any) => selected);
     if (!selectedZones) {
       return NextResponse.json(
         { success: false, error: 'Please select at least one zone' },
+        { status: 400 }
+      );
+    }
+
+    if (!password || password.length < 8) {
+      return NextResponse.json(
+        { success: false, error: 'Password must be at least 8 characters' },
         { status: 400 }
       );
     }
@@ -38,74 +41,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate unique request ID
+    // Hash password (bcrypt)
+    const bcrypt = await import('bcryptjs');
+    const passwordHash = await bcrypt.hash(password, 10);
+
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Create admin request data
+
     const adminRequest = {
       id: requestId,
       name: fullName,
       email,
-      university,
       zones: Object.keys(zones).filter((z) => zones[z]),
-      reason,
       status: 'pending',
+      passwordHash, // store only hash
       requestedAt: new Date().toISOString(),
       createdAt: Date.now(),
       lastUpdated: Date.now()
     };
 
-    // Save to Firestore (Admin SDK)
     await adminDb.collection('adminRequests').doc(requestId).set(adminRequest);
 
-    console.log('✅ Admin request saved (Firestore):', requestId);
-
-    // Send email notification to superadmin (optional - won't fail if email service is not configured)
-    try {
-      if (process.env.BREVO_API_KEY) {
+    if (process.env.BREVO_API_KEY) {
+      try {
         const superadminEmail = process.env.SUPERADMIN_EMAIL || 'arjun.ramdhan.nhsf@gmail.com';
-        const emailSubject = `New Admin Access Request - ${fullName}${university ? ` (${university})` : ''}`;
+        const emailSubject = `New Admin Access Request - ${fullName}`;
         const emailBody = `
           <h2>New Admin Access Request</h2>
           <p>A new admin access request has been submitted:</p>
           <ul>
             <li><strong>Name:</strong> ${fullName}</li>
             <li><strong>Email:</strong> ${email}</li>
-            <li><strong>University:</strong> ${university || 'Not provided'}</li>
             <li><strong>Requested Zones:</strong> ${adminRequest.zones.join(', ')}</li>
             <li><strong>Requested At:</strong> ${new Date().toLocaleString()}</li>
           </ul>
-          ${reason ? `<h3>Reason for Admin Access:</h3><p>${reason}</p>` : ''}
           <p><strong>Request ID:</strong> ${requestId}</p>
           <hr>
-          <p>Please log in to the superadmin dashboard to review and approve/reject this request.</p>
           <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://nhsf-dharmic-games.vercel.app'}/superadmin/requests">Review Admin Requests</a></p>
         `;
-
         await sendEmail(superadminEmail, emailSubject, emailBody);
-        console.log('✅ Email notification sent to superadmin');
-      } else {
-        console.log('📧 Email service not configured - skipping email notification');
-      }
-    } catch (emailError) {
-      console.error('❌ Failed to send email notification:', emailError);
-      // Don't fail the request if email fails - this is optional
+      } catch {}
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Admin request submitted successfully',
-      requestId
-    });
+    return NextResponse.json({ success: true, requestId });
 
   } catch (error: any) {
     console.error('❌ Error creating admin request:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to submit admin request',
-        details: error.message 
-      },
+      { success: false, error: 'Failed to submit admin request', details: error.message },
       { status: 500 }
     );
   }

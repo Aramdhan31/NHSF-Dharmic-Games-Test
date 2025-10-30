@@ -18,9 +18,9 @@ export default function AdminRequestPage() {
   
   const [formData, setFormData] = useState({
     fullName: '',
-    university: '',
     email: '',
-    reason: '',
+    password: '',
+    confirmPassword: '',
     zones: {
       'NZ+CZ': false,
       'LZ+SZ': false
@@ -43,13 +43,29 @@ export default function AdminRequestPage() {
       return
     }
 
+    if (!formData.password || formData.password.length < 8) {
+      setMessage({ type: 'error', text: 'Password must be at least 8 characters.' })
+      setIsSubmitting(false)
+      return
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setMessage({ type: 'error', text: 'Passwords do not match.' })
+      setIsSubmitting(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/submit-admin-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          zones: formData.zones,
+          password: formData.password
+        })
       })
 
       const result = await response.json()
@@ -57,15 +73,13 @@ export default function AdminRequestPage() {
       if (response.ok && result.success) {
         setMessage({
           type: 'success',
-          text: '✅ Thank you for requesting admin access! Please contact Arjun Ramdhan directly to let him know you\'ve submitted your request. You\'ll receive access once approved.'
+          text: '✅ Request submitted! You will be able to sign in once approved.'
         })
-        
-        // Reset form
         setFormData({
           fullName: '',
-          university: '',
           email: '',
-          reason: '',
+          password: '',
+          confirmPassword: '',
           zones: {
             'NZ+CZ': false,
             'LZ+SZ': false
@@ -132,38 +146,58 @@ export default function AdminRequestPage() {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="university" className="text-sm font-medium text-gray-700">
-                  University (Optional)
-                </Label>
-                <Input
-                  id="university"
-                  name="university"
-                  type="text"
-                  value={formData.university}
-                  onChange={handleInputChange}
-                  placeholder="Enter your university name (optional)"
-                  className="mt-1"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email Address *
+                  </Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="any.email@example.com"
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    💡 Any email address can be used. NHSF admin emails (<strong>@nhsf.org.uk</strong>) are recommended but not required.
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    Password *
+                  </Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Enter a strong password"
+                    className="mt-1"
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                  Email Address *
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="any.email@example.com"
-                  className="mt-1"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  💡 Any email address can be used. NHSF admin emails (<strong>@nhsf.org.uk</strong>) are recommended but not required.
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                    Confirm Password *
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    placeholder="Re-enter password"
+                    className="mt-1"
+                  />
+                </div>
               </div>
 
               <div>
@@ -225,21 +259,6 @@ export default function AdminRequestPage() {
                     </div>
                   )}
                 </div>
-              </div>
-
-              <div>
-                <Label htmlFor="reason" className="text-sm font-medium text-gray-700">
-                  Reason for Admin Access (Optional)
-                </Label>
-                <Textarea
-                  id="reason"
-                  name="reason"
-                  value={formData.reason}
-                  onChange={handleInputChange}
-                  placeholder="Explain why you need admin access and what you plan to do with it... (optional)"
-                  rows={4}
-                  className="mt-1"
-                />
               </div>
 
               {message && (

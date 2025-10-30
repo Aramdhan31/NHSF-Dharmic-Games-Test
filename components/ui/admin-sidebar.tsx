@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   GraduationCap, 
   Trophy, 
@@ -18,17 +18,23 @@ import {
   UserCheck,
   Crown
 } from 'lucide-react';
+import { useFirebase } from '@/lib/firebase-context';
+import { checkAdminStatus } from '@/lib/admin-auth';
 
 export function AdminSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const mountedRef = useRef(false);
+  const { user, signOut } = useFirebase();
+
+  const adminCheck = useMemo(() => checkAdminStatus(user as any), [user]);
+  const isSuperAdmin = adminCheck?.isSuperAdmin === true;
 
   useEffect(() => {
     mountedRef.current = true;
   }, []);
   
-  const menuItems = [
+  const allMenuItems = [
     {
       title: 'Overview',
       icon: Home,
@@ -63,26 +69,31 @@ export function AdminSidebar() {
       title: 'Admin Requests',
       icon: UserCheck,
       href: '/admin',
-      tab: 'admin-requests'
+      tab: 'admin-requests',
+      superadminOnly: true
     },
     {
       title: 'User Management',
       icon: Crown,
       href: '/admin',
-      tab: 'management'
-    }
+      tab: 'management',
+      superadminOnly: true
+    },
+    {
+      title: 'Settings',
+      icon: Settings,
+      href: '/admin',
+      tab: 'settings',
+      superadminOnly: true
+    },
   ];
+
+  const menuItems = allMenuItems.filter((item: any) => isSuperAdmin || !item.superadminOnly);
 
   const handleNavigation = (item: any) => {
     console.log('🔄 Sidebar clicked:', item.title, 'Tab:', item.tab);
-    
-    // Only run on client side
     if (typeof window === 'undefined') return;
-    
-    // Update URL hash for navigation
     window.location.hash = `#${item.tab}`;
-    
-    // Dispatch a simple custom event
     try {
       const event = new CustomEvent('adminTabChange', { detail: item.tab });
       window.dispatchEvent(event);
@@ -92,8 +103,13 @@ export function AdminSidebar() {
     }
   };
 
-  const handleLogout = () => {
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      router.replace('/admin/login');
+    } catch (e) {
+      router.replace('/admin/login');
+    }
   };
 
   return (
@@ -130,7 +146,6 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      {/* Footer */}
       <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
         <div className="flex items-center space-x-3 mb-4">
           <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">

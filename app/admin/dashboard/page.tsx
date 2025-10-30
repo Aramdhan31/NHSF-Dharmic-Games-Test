@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useFirebase } from "@/lib/firebase-context"
 import { checkAdminStatus, logAdminAccess } from "@/lib/admin-auth"
-import { ref, onValue, update, get, push, set } from "firebase/database"
+import { ref, onValue, update, get, push, set, remove } from "firebase/database"
 import { collection, getDocs, query, orderBy, onSnapshot, doc, updateDoc } from "firebase/firestore"
 import { realtimeDb, db } from "@/lib/firebase"
 import { SidebarProvider } from "@/components/ui/sidebar"
@@ -689,7 +689,7 @@ export default function AdminDashboardPage() {
       console.log('🗑️ Deleting match:', matchId)
       
       const matchRef = ref(realtimeDb, `matches/${matchId}`)
-      await update(matchRef, null) // Remove the match
+      await remove(matchRef) // Properly delete the match node
       
       // Update local state
       setMatches(prevMatches => 

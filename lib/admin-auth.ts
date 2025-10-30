@@ -56,20 +56,23 @@ export function checkAdminStatus(user: AdminUser | null): AdminCheckResult {
   }
 
   // Check role-based admin status (primary method)
-  const isSuperAdmin = user.role === 'super_admin' || user.permissions?.canManageAllZones;
+  // ONLY users with explicit role='super_admin' are superadmins
+  const isSuperAdmin = user.role === 'super_admin';
   const isZoneAdmin = user.role === 'zone_admin' || user.permissions?.canManageOwnZone;
   
   // Check email-based admin status (fallback for legacy users)
   // Only specific emails get automatic admin access - others must request it
-  const isEmailAdmin = user.email === 'arjunramdhan37@outlook.com' ||
+  // NOTE: Email admins are regular admins, NOT superadmins unless role='super_admin'
+  const isEmailAdmin = (user.email === 'arjunramdhan37@outlook.com' ||
                       user.email === 'arjun.ramdhan@nhsf.org.uk' ||
                       user.email === 'arjun.ramdhan.nhsf@gmail.com' ||
                       user.email === 'arjunramdhan37@gmail.com' ||
-                      user.email === 'pdevulapally0202@gmail.com';
+                      user.email === 'pdevulapally0202@gmail.com') && user.role !== 'admin';
 
   // Debug logging
   console.log('🔐 Admin auth debug:', {
     email: user.email,
+    role: user.role,
     isEmailAdmin,
     isSuperAdmin,
     isZoneAdmin
@@ -85,10 +88,11 @@ export function checkAdminStatus(user: AdminUser | null): AdminCheckResult {
   else if (isEmailAdmin) adminType = 'email_admin';
 
   // Determine permissions based on admin type
+  // ONLY true superadmins (role='super_admin') get superadmin permissions
   const permissions = {
-    canManageAllZones: isSuperAdmin || isEmailAdmin,
+    canManageAllZones: isSuperAdmin, // Only explicit super_admin role
     canManageOwnZone: isSuperAdmin || isZoneAdmin || isEmailAdmin,
-    canManageUsers: isSuperAdmin || isEmailAdmin,
+    canManageUsers: isSuperAdmin, // Only superadmins can manage users
     canViewAnalytics: isSuperAdmin || isZoneAdmin || isEmailAdmin,
     canUpdateResults: isSuperAdmin || isZoneAdmin || isEmailAdmin,
     canCreateMatches: isSuperAdmin || isZoneAdmin || isEmailAdmin,

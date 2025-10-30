@@ -70,6 +70,29 @@ export async function POST(req: NextRequest) {
         approvedAt: Date.now(),
         approvedBy: reviewedBy,
       }, { merge: true });
+
+      // ALSO add to users collection so firebase-context.tsx can load the role
+      // Generate a user ID (use email as base for consistency)
+      const userId = `admin_${Buffer.from(request.email).toString('hex').slice(0, 24)}`;
+      await adminDb.collection('users').doc(userId).set({
+        id: userId,
+        email: request.email,
+        displayName: request.name || request.email,
+        firstName: request.name?.split(' ')[0] || '',
+        lastName: request.name?.split(' ').slice(1).join(' ') || '',
+        zone: request.zones?.[0] || 'all',
+        role: 'admin', // Regular admin, NOT super_admin
+        isActive: true,
+        createdAt: Date.now(),
+        permissions: {
+          canManageUsers: false,
+          canManageAllZones: false,
+          canManageOwnZone: true,
+          canViewAnalytics: true,
+          canUpdateResults: true,
+          canCreateMatches: true,
+        },
+      }, { merge: true });
     }
 
     return NextResponse.json({ success: true });

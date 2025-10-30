@@ -108,9 +108,15 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
               if (retryResult.success && retryResult.data) {
                 setUser(retryResult.data as User);
               } else {
-                console.log('❌ User not found in Firestore, signing out');
-                await authUtils.signOut();
-                setUser(null);
+                console.log('❌ User not found in Firestore, using minimal fallback user');
+                // Fallback: keep the session and create a minimal user object
+                setUser({
+                  id: firebaseUser.uid,
+                  email: firebaseUser.email || '',
+                  displayName: firebaseUser.displayName || firebaseUser.email || 'Admin',
+                  role: 'super_admin'
+                } as any);
+                // Do NOT sign out; allow superadmin/email-admin fallback to work
               }
             }, 5000);
           }

@@ -1,11 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useFirebase } from "@/lib/firebase-context"
+import { checkAdminStatus } from "@/lib/admin-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Loader2 } from "lucide-react"
 import { 
   Shield, 
   Users, 
@@ -21,6 +25,39 @@ import {
 } from "lucide-react"
 
 export default function AdminInfoPage() {
+  const router = useRouter()
+  const { user, loading } = useFirebase()
+
+  // Redirect logged-in admins to dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      const adminCheck = checkAdminStatus(user)
+      if (adminCheck.isAdmin) {
+        router.push('/admin/dashboard')
+      }
+    }
+  }, [user, loading, router])
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-orange-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render info page if user is logged in (redirect will happen)
+  if (user) {
+    const adminCheck = checkAdminStatus(user)
+    if (adminCheck.isAdmin) {
+      return null // Redirect in progress
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100">
       <div className="container mx-auto px-4 py-8">

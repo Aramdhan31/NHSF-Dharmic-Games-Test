@@ -83,11 +83,32 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
             }
           } catch {}
 
+          // First check users collection
           const userResult = await userManagementService.getUserByEmail(firebaseUser.email!);
           if (userResult.success && userResult.data) {
-            setUser(userResult.data as User);
+            let userData = userResult.data as User;
+            
+            // Also check admins collection via API to get the most up-to-date role
+            try {
+              const roleRes = await fetch(`/api/get-admin-role?email=${encodeURIComponent(firebaseUser.email!)}`);
+              if (roleRes.ok) {
+                const roleData = await roleRes.json();
+                if (roleData.success && roleData.role) {
+                  // Override role from admins collection if it exists (more authoritative)
+                  userData = {
+                    ...userData,
+                    role: roleData.role as any,
+                  };
+                }
+              }
+            } catch (e) {
+              // If admin check fails, continue with user data
+              console.log('⚠️ Could not check admins collection:', e);
+            }
+            
+            setUser(userData);
             // Update last login
-            await userManagementService.updateLastLogin(userResult.data.id);
+            await userManagementService.updateLastLogin(userData.id);
           } else {
             // User not found in Firestore - wait a bit for signup process to complete
             

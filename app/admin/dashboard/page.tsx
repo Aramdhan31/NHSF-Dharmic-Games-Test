@@ -871,16 +871,48 @@ export default function AdminDashboardPage() {
         
         <div className="ml-64">
           {/* Header */}
-          <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+          <div className={`shadow-sm border-b px-6 py-4 ${
+            adminCheck?.isSuperAdmin 
+              ? 'bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-100 border-yellow-300' 
+              : 'bg-white border-gray-200'
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg">
-                    <Shield className="h-6 w-6 text-white" />
+                  <div className={`p-2 rounded-lg ${
+                    adminCheck?.isSuperAdmin 
+                      ? 'bg-gradient-to-r from-yellow-500 to-amber-600' 
+                      : 'bg-gradient-to-r from-orange-500 to-red-600'
+                  }`}>
+                    {adminCheck?.isSuperAdmin ? (
+                      <Crown className="h-6 w-6 text-white" />
+                    ) : (
+                      <Shield className="h-6 w-6 text-white" />
+                    )}
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                    <p className="text-orange-600 font-medium">Welcome back, {adminName}</p>
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-2xl font-bold text-gray-900">
+                        {adminCheck?.isSuperAdmin ? 'Super Admin Dashboard' : 'Admin Dashboard'}
+                      </h1>
+                      {adminCheck?.isSuperAdmin && (
+                        <Badge className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white border-0 px-3 py-1">
+                          <Crown className="h-3 w-3 mr-1" />
+                          Super Admin
+                        </Badge>
+                      )}
+                      {!adminCheck?.isSuperAdmin && (
+                        <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white border-0 px-3 py-1">
+                          <Shield className="h-3 w-3 mr-1" />
+                          Admin
+                        </Badge>
+                      )}
+                    </div>
+                    <p className={`font-medium mt-1 ${
+                      adminCheck?.isSuperAdmin ? 'text-amber-700' : 'text-orange-600'
+                    }`}>
+                      Welcome back, {adminName}
+                    </p>
                   </div>
                 </div>
               </div>

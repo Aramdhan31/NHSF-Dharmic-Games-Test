@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useFirebase } from "@/lib/firebase-context";
+import { checkAdminStatus } from "@/lib/admin-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Settings, 
   Save, 
@@ -19,7 +22,9 @@ import {
   Lock,
   Mail,
   Phone,
-  Trophy
+  Trophy,
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 
 type Zone = 'LZ' | 'SZ' | 'CZ' | 'NZ';
@@ -35,8 +40,55 @@ const zoneNames = {
 };
 
 export default function SettingsPage() {
-  const { user: currentUser } = useFirebase();
+  const router = useRouter();
+  const { user: currentUser, loading: authLoading } = useFirebase();
   const [loading, setLoading] = useState(false);
+  const [adminCheck, setAdminCheck] = useState<any>(null);
+
+  // Check if user is superadmin
+  useEffect(() => {
+    if (!authLoading && currentUser) {
+      const adminStatus = checkAdminStatus(currentUser);
+      setAdminCheck(adminStatus);
+      
+      // Redirect non-superadmins to dashboard
+      if (!adminStatus.isSuperAdmin) {
+        router.push('/admin/dashboard');
+        return;
+      }
+    } else if (!authLoading && !currentUser) {
+      router.push('/admin/login');
+    }
+  }, [currentUser, authLoading, router]);
+
+  // Show loading while checking permissions
+  if (authLoading || !adminCheck) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-orange-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied if not superadmin
+  if (!adminCheck.isSuperAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-4">This page is only accessible to Super Admins.</p>
+          <Button onClick={() => router.push('/admin/dashboard')}>
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const [settings, setSettings] = useState({
     // Zone Settings
     zoneName: 'London Zone',

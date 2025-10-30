@@ -86,9 +86,10 @@ export function checkAdminStatus(user: AdminUser | null): AdminCheckResult {
   const isAdmin = isSuperAdmin || isZoneAdmin || isRegularAdmin || isEmailAdmin;
 
   // Determine admin type
-  let adminType: 'super_admin' | 'zone_admin' | 'email_admin' | 'none' = 'none';
+  let adminType: 'super_admin' | 'zone_admin' | 'email_admin' | 'admin' | 'none' = 'none';
   if (isSuperAdmin) adminType = 'super_admin';
   else if (isZoneAdmin) adminType = 'zone_admin';
+  else if (isRegularAdmin) adminType = 'admin';
   else if (isEmailAdmin) adminType = 'email_admin';
 
   // Determine permissions based on admin type

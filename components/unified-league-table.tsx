@@ -118,6 +118,17 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
           }
         });
 
+        // Listen to matches changes to recalculate stats when matches complete
+        const matchesRef = ref(realtimeDb, 'matches');
+        const unsubscribeMatches = onValue(matchesRef, (snapshot) => {
+          console.log('🏆 Matches listener triggered, snapshot exists:', snapshot.exists());
+          if (snapshot.exists()) {
+            console.log('🏆 Matches data changed, updating league table...');
+            // Reload universities to get updated stats from live points system
+            loadUniversities();
+          }
+        });
+
         setLoading(false);
         
         // Also try to load universities immediately
@@ -132,6 +143,7 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
 
         return () => {
           unsubscribeUniversities();
+          unsubscribeMatches();
         };
       } catch (err) {
         setError('Failed to connect to real-time database');

@@ -130,19 +130,30 @@ export class LivePointsSystem {
 
   /**
    * 🎯 Process match for points calculation
+   * Handles both formats: teamA/teamB/scoreA/scoreB and team1/team2/team1Score/team2Score
    */
   private async processMatchForPoints(matchId: string, match: any) {
-    if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) return;
+    // Handle both match formats
+    const team1 = match.teamA || match.team1 || match.university1;
+    const team2 = match.teamB || match.team2 || match.university2;
+    const score1 = match.scoreA || match.team1Score || match.university1Score || 0;
+    const score2 = match.scoreB || match.team2Score || match.university2Score || 0;
+    
+    if (!team1 || !team2) {
+      console.log('⚠️ Match missing team names:', matchId, match);
+      return;
+    }
     
     if (match.status !== 'completed') return;
     
     console.log('🎯 Processing match for points:', {
       matchId,
-      teamA: match.teamA,
-      teamB: match.teamB,
-      scoreA: match.scoreA,
-      scoreB: match.scoreB,
-      status: match.status
+      team1,
+      team2,
+      score1,
+      score2,
+      status: match.status,
+      sport: match.sport
     });
     
     try {
@@ -150,21 +161,21 @@ export class LivePointsSystem {
       const pointsAwarded = this.getPointsForSport(match.sport || 'Football');
       
       // Determine winner and loser
-      const teamAWon = match.scoreA > match.scoreB;
-      const teamBWon = match.scoreB > match.scoreA;
-      const isDraw = match.scoreA === match.scoreB;
+      const team1Won = score1 > score2;
+      const team2Won = score2 > score1;
+      const isDraw = score1 === score2;
       
-      // Update team A
-      if (teamAWon) {
-        await this.updateUniversityPoints(match.teamA, match.zone, pointsAwarded, true, matchId, match.sport);
-        await this.updateUniversityPoints(match.teamB, match.zone, 0, false, matchId, match.sport);
-      } else if (teamBWon) {
-        await this.updateUniversityPoints(match.teamB, match.zone, pointsAwarded, true, matchId, match.sport);
-        await this.updateUniversityPoints(match.teamA, match.zone, 0, false, matchId, match.sport);
+      // Update teams
+      if (team1Won) {
+        await this.updateUniversityPoints(team1, match.zone, pointsAwarded, true, matchId, match.sport);
+        await this.updateUniversityPoints(team2, match.zone, 0, false, matchId, match.sport);
+      } else if (team2Won) {
+        await this.updateUniversityPoints(team2, match.zone, pointsAwarded, true, matchId, match.sport);
+        await this.updateUniversityPoints(team1, match.zone, 0, false, matchId, match.sport);
       } else if (isDraw) {
         // Draw - both teams get 1 point
-        await this.updateUniversityPoints(match.teamA, match.zone, 1, false, matchId, match.sport);
-        await this.updateUniversityPoints(match.teamB, match.zone, 1, false, matchId, match.sport);
+        await this.updateUniversityPoints(team1, match.zone, 1, false, matchId, match.sport);
+        await this.updateUniversityPoints(team2, match.zone, 1, false, matchId, match.sport);
       }
       
     } catch (error) {

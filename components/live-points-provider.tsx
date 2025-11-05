@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { ref, onValue, set, update, get } from 'firebase/database';
 import { realtimeDb } from '@/lib/firebase';
+import { setupLivePointsSystem } from '@/lib/live-points-system';
 
 interface LivePointsProviderProps {
   children: React.ReactNode;
@@ -14,6 +15,9 @@ export function LivePointsProvider({ children }: LivePointsProviderProps) {
 
   useEffect(() => {
     console.log('🏆 Initializing NHSF Live Points System...');
+    // Setup the main live points system that updates university stats from matches
+    setupLivePointsSystem();
+    // Setup additional NHSF-specific listeners
     setupNHSFLiveSystem();
     
     return () => {

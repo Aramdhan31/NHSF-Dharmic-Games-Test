@@ -5,8 +5,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Users, GamepadIcon, Award, Wifi, WifiOff, Building2, Users2, Clock, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ref, onValue } from 'firebase/database';
-import { realtimeDb } from '@/lib/firebase';
+import { ref, onValue, get } from 'firebase/database';
+import { collection, getDocs } from 'firebase/firestore';
+import { realtimeDb, db } from '@/lib/firebase';
+import { universities as staticUniversities } from '@/app/teams/page';
 import { useLivePoints } from '@/lib/live-points-system';
 
 export function LiveStatsCards() {
@@ -53,29 +55,40 @@ export function LiveStatsCards() {
 
       // 🏆 Listen to live stats from Firebase (calculated by LivePointsProvider)
       const statsRef = ref(realtimeDb, 'stats/summary');
-      const statsListener = onValue(statsRef, (snapshot) => {
+      const statsListener = onValue(statsRef, async (snapshot) => {
         if (snapshot.exists()) {
           const liveStats = snapshot.val();
           console.log('📊 NHSF Live stats received:', liveStats);
           
-          setStats({
+          // Recalculate competing universities to match league table exactly
+          await calculateLiveStats();
+          
+          setStats(prev => ({
+            ...prev,
             activePlayers: liveStats.activePlayers || 0,
             gamesPlayed: liveStats.completedMatches || 0,
             hoursCompeted: Math.round((liveStats.completedMatches || 0) * 1.5), // Estimate
             matchesWon: Math.round((liveStats.totalPoints || 0) / 3), // Estimate from points
             zoneChampionships: liveStats.zones || 4,
             upcomingMatches: liveStats.upcomingMatches || 0,
-            competingUniversities: liveStats.competingUniversities || 0,
+            // competingUniversities will be set by calculateLiveStats
             totalSportsTeams: liveStats.totalSportsTeams || 0
-          });
+          }));
           
           setIsLive(liveStats.isLive || false);
           setLastUpdated(new Date(liveStats.lastUpdated || Date.now()));
         } else {
           console.log('📊 No live stats available, using fallback calculation...');
           // Fallback to manual calculation if live stats not available
-          calculateLiveStats();
+          await calculateLiveStats();
         }
+      });
+      
+      // Also listen to universities changes to recalculate competing count
+      const universitiesRef = ref(realtimeDb, 'universities');
+      const universitiesListener = onValue(universitiesRef, async () => {
+        console.log('🏫 Universities changed - recalculating competing count...');
+        await calculateLiveStats();
       });
 
       setLoading(false);
@@ -91,11 +104,70 @@ export function LiveStatsCards() {
     }
   };
 
-  const calculateLiveStats = () => {
+  const calculateLiveStats = async () => {
     console.log('📊 Calculating live stats from real data...');
     
-    // Calculate competing universities
-    const competingUniversities = universities.filter(uni => 
+    // Load universities same way as league table (including static universities)
+    let allUniversitiesList: any[] = [];
+    
+    // First, try Realtime Database
+    try {
+      const universitiesRef = ref(realtimeDb, 'universities');
+      const universitiesSnapshot = await get(universitiesRef);
+      
+      if (universitiesSnapshot.exists()) {
+        const universitiesData = universitiesSnapshot.val();
+        allUniversitiesList = Object.values(universitiesData || {}) as any[];
+      } else {
+        // Try Firestore as fallback
+        try {
+          const firestoreSnapshot = await getDocs(collection(db, 'universities'));
+          if (!firestoreSnapshot.empty) {
+            allUniversitiesList = firestoreSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+          }
+        } catch (firestoreError) {
+          console.log('📊 No universities in Firestore');
+        }
+      }
+    } catch (error) {
+      console.log('📊 Error loading from Firebase, using local data');
+    }
+    
+    // Add competing universities from static code (teams page) - same logic as league table
+    const staticCompetingUnis = staticUniversities.filter(uni => uni.isCompeting === true);
+    const existingNames = new Set(allUniversitiesList.map(uni => (uni.name || uni.universityName || '').toLowerCase()));
+    
+    staticCompetingUnis.forEach(staticUni => {
+      const nameLower = staticUni.name.toLowerCase();
+      if (!existingNames.has(nameLower)) {
+        allUniversitiesList.push({
+          id: staticUni.id || `static-${staticUni.name.toLowerCase().replace(/\s+/g, '-')}`,
+          name: staticUni.name,
+          zone: staticUni.zone,
+          isCompeting: true,
+          status: 'competing'
+        });
+        existingNames.add(nameLower);
+      } else {
+        // Update existing university with static data if it's missing isCompeting flag
+        const existingIndex = allUniversitiesList.findIndex(uni => 
+          (uni.name || uni.universityName || '').toLowerCase() === nameLower
+        );
+        if (existingIndex >= 0 && staticUni.isCompeting === true) {
+          allUniversitiesList[existingIndex] = {
+            ...allUniversitiesList[existingIndex],
+            isCompeting: true,
+            status: allUniversitiesList[existingIndex].status || 'competing'
+          };
+        }
+      }
+    });
+    
+    // Calculate competing universities - same filter as league table
+    const competingUniversities = allUniversitiesList.filter(uni => 
       uni.isCompeting === true || uni.status === 'competing'
     ).length;
     

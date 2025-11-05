@@ -199,10 +199,17 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
         
         universitiesList
           .filter(uni => {
-            // Only include competing universities
-            return uni.isCompeting === true || 
-                   uni.status === 'competing' ||
-                   (uni.status !== 'not-competing' && uni.status !== 'affiliated');
+            // Only include competing universities (be more lenient - include if not explicitly not-competing or affiliated)
+            const isCompeting = uni.isCompeting === true || 
+                               uni.status === 'competing' ||
+                               (uni.status !== 'not-competing' && uni.status !== 'affiliated');
+            
+            // Log universities being filtered out for debugging
+            if (!isCompeting) {
+              console.log(`⚠️ Filtering out non-competing university: ${uni.name || uni.universityName} - isCompeting: ${uni.isCompeting}, status: ${uni.status}`);
+            }
+            
+            return isCompeting;
           })
           .forEach((uni: any, index: number) => {
           // Skip if university doesn't have required data

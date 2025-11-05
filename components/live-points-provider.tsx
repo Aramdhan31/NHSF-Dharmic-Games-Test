@@ -94,13 +94,23 @@ export function LivePointsProvider({ children }: LivePointsProviderProps) {
       
       // The Cloud Function will handle the actual calculation and Firebase writes
       // We just need to trigger it by making a small change to a trigger path
-      const triggerRef = ref(realtimeDb, 'system/trigger');
-      await set(triggerRef, {
-        timestamp: Date.now(),
-        reason: 'data-change'
-      });
+      // Note: This requires admin permissions, so we catch errors gracefully
+      try {
+        const triggerRef = ref(realtimeDb, 'system/trigger');
+        await set(triggerRef, {
+          timestamp: Date.now(),
+          reason: 'data-change'
+        });
+        console.log('✅ Triggered Cloud Function for stats recalculation');
+      } catch (triggerError: any) {
+        // Permission denied is expected for non-admin users
+        if (triggerError?.code === 'PERMISSION_DENIED' || triggerError?.message?.includes('permission')) {
+          console.log('⚠️ Cloud Function trigger requires admin permissions (this is normal for non-admin users)');
+        } else {
+          console.error('❌ Error triggering stats recalculation:', triggerError);
+        }
+      }
 
-      console.log('✅ Triggered Cloud Function for stats recalculation');
       setLastUpdate(new Date());
     } catch (error) {
       console.error('❌ Error triggering stats recalculation:', error);
@@ -113,13 +123,23 @@ export function LivePointsProvider({ children }: LivePointsProviderProps) {
       
       // The Cloud Function will handle the actual calculation and Firebase writes
       // We just need to trigger it by making a small change to a trigger path
-      const triggerRef = ref(realtimeDb, 'system/trigger');
-      await set(triggerRef, {
-        timestamp: Date.now(),
-        reason: 'data-change'
-      });
+      // Note: This requires admin permissions, so we catch errors gracefully
+      try {
+        const triggerRef = ref(realtimeDb, 'system/trigger');
+        await set(triggerRef, {
+          timestamp: Date.now(),
+          reason: 'data-change'
+        });
+        console.log('✅ Triggered Cloud Function for leaderboard recalculation');
+      } catch (triggerError: any) {
+        // Permission denied is expected for non-admin users
+        if (triggerError?.code === 'PERMISSION_DENIED' || triggerError?.message?.includes('permission')) {
+          console.log('⚠️ Cloud Function trigger requires admin permissions (this is normal for non-admin users)');
+        } else {
+          console.error('❌ Error triggering leaderboard recalculation:', triggerError);
+        }
+      }
 
-      console.log('✅ Triggered Cloud Function for leaderboard recalculation');
       setLastUpdate(new Date());
     } catch (error) {
       console.error('❌ Error triggering leaderboard recalculation:', error);

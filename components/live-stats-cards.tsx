@@ -37,7 +37,7 @@ export function LiveStatsCards() {
     if (lastPointsUpdate) {
       console.log('🏆 Live points update received in stats:', lastPointsUpdate);
       // Recalculate stats when points change
-      calculateStats();
+      calculateLiveStats();
     }
   }, [lastPointsUpdate]);
 
@@ -74,7 +74,7 @@ export function LiveStatsCards() {
         } else {
           console.log('📊 No live stats available, using fallback calculation...');
           // Fallback to manual calculation if live stats not available
-          calculateStats();
+          calculateLiveStats();
         }
       });
 

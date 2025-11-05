@@ -9,6 +9,7 @@ import { ref, get, onValue } from 'firebase/database';
 import { collection, getDocs } from 'firebase/firestore';
 import { realtimeDb, db } from '@/lib/firebase';
 import { useLivePoints } from '@/lib/live-points-system';
+import { universities as staticUniversities } from '@/app/teams/page';
 
 interface LeagueEntry {
   id: string;
@@ -185,6 +186,60 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
           console.log('📊 No universities in Firestore either');
         }
       }
+      
+      // Add competing universities from static code (teams page) that might not be in Firebase yet
+      const staticCompetingUnis = staticUniversities.filter(uni => uni.isCompeting === true);
+      console.log('📊 Found competing universities in static code:', staticCompetingUnis.length);
+      
+      // Merge static universities with Firebase data (avoid duplicates by name)
+      const existingNames = new Set(universitiesList.map(uni => (uni.name || uni.universityName || '').toLowerCase()));
+      
+      staticCompetingUnis.forEach(staticUni => {
+        const nameLower = staticUni.name.toLowerCase();
+        if (!existingNames.has(nameLower)) {
+          // Add static university to the list
+          universitiesList.push({
+            id: staticUni.id || `static-${staticUni.name.toLowerCase().replace(/\s+/g, '-')}`,
+            name: staticUni.name,
+            zone: staticUni.zone,
+            sports: staticUni.sports || [],
+            teamInfo: staticUni.teamInfo || {},
+            members: staticUni.members || 0,
+            wins: staticUni.wins || 0,
+            losses: staticUni.losses || 0,
+            points: staticUni.points || 0,
+            description: staticUni.description || `${staticUni.name} Hindu Society`,
+            tournamentDate: staticUni.tournamentDate,
+            isCompeting: true, // Always true for static competing universities
+            status: 'competing',
+            isStatic: true // Flag to indicate this is from static code
+          });
+          existingNames.add(nameLower);
+        } else {
+          // Update existing university with static data if it's missing isCompeting flag
+          const existingIndex = universitiesList.findIndex(uni => 
+            (uni.name || uni.universityName || '').toLowerCase() === nameLower
+          );
+          if (existingIndex >= 0) {
+            const existing = universitiesList[existingIndex];
+            // Ensure isCompeting is set if static says it should be competing
+            if (staticUni.isCompeting === true) {
+              universitiesList[existingIndex] = {
+                ...existing,
+                isCompeting: true,
+                status: existing.status || 'competing',
+                // Merge sports and teamInfo from static if missing
+                sports: existing.sports && existing.sports.length > 0 && existing.sports[0] !== 'TBD'
+                  ? existing.sports
+                  : (staticUni.sports || existing.sports || []),
+                teamInfo: existing.teamInfo || staticUni.teamInfo || {}
+              };
+            }
+          }
+        }
+      });
+      
+      console.log('📊 Total universities after merging static data:', universitiesList.length);
       
       if (universitiesList.length > 0) {
         console.log('🏫 Universities data:', universitiesList);

@@ -331,20 +331,19 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
   };
 
   const getPositionIcon = (position: number) => {
-    if (position === 1) return <Trophy className="h-5 w-5 text-yellow-500" />;
-    if (position === 2) return <Medal className="h-5 w-5 text-gray-400" />;
-    if (position === 3) return <Award className="h-5 w-5 text-amber-600" />;
+    // Just show numbers for all positions (no trophy/medal icons)
     return <span className="text-lg font-bold text-gray-600 w-6 h-6 flex items-center justify-center">{position}</span>;
   };
 
   const getZoneColor = (zone: string) => {
+    // Use gradient colors for combined zones (two mixed colors) like university-card
     const zoneColors: { [key: string]: string } = {
       'NZ': 'bg-red-500',
       'CZ': 'bg-green-500', 
       'LZ': 'bg-blue-500',
-      'SZ': 'bg-purple-500',
-      'NZ+CZ': 'bg-orange-500',
-      'LZ+SZ': 'bg-indigo-500'
+      'SZ': 'bg-yellow-500',
+      'NZ+CZ': 'bg-gradient-to-r from-red-500 to-green-500', // Two mixed colors
+      'LZ+SZ': 'bg-gradient-to-r from-blue-500 to-yellow-500' // Two mixed colors
     };
     return zoneColors[zone] || 'bg-gray-500';
   };

@@ -375,8 +375,8 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
                   Live Table ✅
                 </Badge>
               ) : (
-                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                  Waiting for scores… showing signup data
+                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+                  League Table
                 </Badge>
               )}
             </div>

@@ -176,15 +176,21 @@ export function LiveStatsCards() {
       player.status === 'active' || !player.status
     ).length;
     
-    // Calculate total sports teams from all universities (including static)
+    // Calculate total sports teams - total count of all sports across all competing universities
+    // This matches the sports section in the league table
     let totalSportsTeams = 0;
     const allSports = new Set();
     
-    allUniversitiesList.forEach(uni => {
+    // Only count sports from competing universities (same as league table)
+    const competingUnis = allUniversitiesList.filter(uni => 
+      uni.isCompeting === true || uni.status === 'competing'
+    );
+    
+    competingUnis.forEach(uni => {
       if (uni.sports && Array.isArray(uni.sports)) {
         uni.sports.forEach((sport: string) => {
           allSports.add(sport);
-          totalSportsTeams++;
+          totalSportsTeams++; // Count each sport entry (total sports across all universities)
         });
       }
     });

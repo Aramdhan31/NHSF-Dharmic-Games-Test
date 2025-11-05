@@ -143,12 +143,22 @@ export function LiveStatsCards() {
     staticCompetingUnis.forEach(staticUni => {
       const nameLower = staticUni.name.toLowerCase();
       if (!existingNames.has(nameLower)) {
+        // Add static university to the list (including sports)
         allUniversitiesList.push({
           id: staticUni.id || `static-${staticUni.name.toLowerCase().replace(/\s+/g, '-')}`,
           name: staticUni.name,
           zone: staticUni.zone,
+          sports: staticUni.sports || [],
+          teamInfo: staticUni.teamInfo || {},
+          members: staticUni.members || 0,
+          wins: staticUni.wins || 0,
+          losses: staticUni.losses || 0,
+          points: staticUni.points || 0,
+          description: staticUni.description || `${staticUni.name} Hindu Society`,
+          tournamentDate: staticUni.tournamentDate,
           isCompeting: true,
-          status: 'competing'
+          status: 'competing',
+          isStatic: true
         });
         existingNames.add(nameLower);
       } else {
@@ -157,10 +167,16 @@ export function LiveStatsCards() {
           (uni.name || uni.universityName || '').toLowerCase() === nameLower
         );
         if (existingIndex >= 0 && staticUni.isCompeting === true) {
+          const existing = allUniversitiesList[existingIndex];
           allUniversitiesList[existingIndex] = {
-            ...allUniversitiesList[existingIndex],
+            ...existing,
             isCompeting: true,
-            status: allUniversitiesList[existingIndex].status || 'competing'
+            status: existing.status || 'competing',
+            // Merge sports and teamInfo from static if missing
+            sports: existing.sports && existing.sports.length > 0 && existing.sports[0] !== 'TBD'
+              ? existing.sports
+              : (staticUni.sports || existing.sports || []),
+            teamInfo: existing.teamInfo || staticUni.teamInfo || {}
           };
         }
       }
@@ -186,14 +202,20 @@ export function LiveStatsCards() {
       uni.isCompeting === true || uni.status === 'competing'
     );
     
+    console.log('📊 Counting sports from competing universities:', competingUnis.length);
     competingUnis.forEach(uni => {
       if (uni.sports && Array.isArray(uni.sports)) {
+        console.log(`📊 ${uni.name || uni.universityName}: ${uni.sports.length} sports -`, uni.sports);
         uni.sports.forEach((sport: string) => {
           allSports.add(sport);
           totalSportsTeams++; // Count each sport entry (total sports across all universities)
         });
+      } else {
+        console.log(`📊 ${uni.name || uni.universityName}: No sports array`);
       }
     });
+    
+    console.log('📊 Total sports teams count:', totalSportsTeams);
     
     // Calculate games played
     const completedMatches = matches.filter(match => 

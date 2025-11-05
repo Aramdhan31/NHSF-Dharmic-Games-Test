@@ -145,7 +145,10 @@ export default function UniversityRegistration() {
       const uid = userCred.user.uid
       console.log("✅ Created Firebase Auth user:", uid)
 
-      // 2. Save university data in Realtime Database
+      // 2. Find matching static university data to pre-populate sports (for LZ+SZ)
+      const staticUni = universities.find(u => u.name === name && u.zone === region)
+      
+      // 3. Save university data in Realtime Database with pre-populated sports for LZ+SZ
       console.log("📝 Attempting to save university data to Realtime Database...")
       console.log("📝 Database URL:", realtimeDb.app.options.databaseURL)
       console.log("📝 Realtime DB instance:", realtimeDb)
@@ -156,7 +159,8 @@ export default function UniversityRegistration() {
         createdBy: uid,
         status: "competing",
         contactPerson: formData.contactPerson,
-        contactRole: formData.contactRole
+        contactRole: formData.contactRole,
+        prePopulatedSports: staticUni?.sports || []
       })
       
       
@@ -168,9 +172,20 @@ export default function UniversityRegistration() {
         email,
         createdBy: uid,
         status: "competing",
+        isCompeting: true, // Automatically set as competing when they sign up
         contactPerson: formData.contactPerson,
         contactRole: formData.contactRole,
-        createdAt: Date.now()
+        // Pre-populate sports and teamInfo for LZ+SZ universities from static data
+        sports: staticUni?.sports || [],
+        teamInfo: staticUni?.teamInfo || {},
+        members: 0,
+        wins: 0,
+        losses: 0,
+        points: 0,
+        description: staticUni?.description || `${name} Hindu Society`,
+        tournamentDate: region === "NZ+CZ" ? "Nov 22, 2025" : "Nov 23, 2025",
+        createdAt: Date.now(),
+        lastUpdated: Date.now()
       })
       
       console.log("✅ Successfully saved university data to Realtime Database!")

@@ -202,18 +202,18 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
           // Get sports the university is registered for
           const sports = uni.sports || [];
           
-          // Calculate totals across all sports
-          const totalMatches = uni.totalMatches || 0;
-          const totalWins = uni.totalWins || 0;
-          const totalLosses = uni.totalLosses || 0;
-          const totalDraws = uni.totalDraws || 0;
-          const totalPoints = uni.totalPoints || 0;
+          // Calculate totals across all sports - use wins/losses/points if totalWins/totalLosses don't exist
+          const totalMatches = uni.totalMatches || (uni.wins || 0) + (uni.losses || 0) + (uni.draws || 0);
+          const totalWins = uni.totalWins || uni.wins || 0;
+          const totalLosses = uni.totalLosses || uni.losses || 0;
+          const totalDraws = uni.totalDraws || uni.draws || 0;
+          const totalPoints = uni.totalPoints || uni.points || 0;
 
           const entry: LeagueEntry = {
             id: uni.id || `uni-${index}`,
             university: uni.name || uni.universityName || 'Unknown University',
             zone: uni.zone || uni.region || 'Unknown',
-            sports: sports,
+            sports: sports, // Sports array from university data (includes pre-populated sports for LZ+SZ)
             totalMatches: totalMatches,
             totalWins: totalWins,
             totalLosses: totalLosses,

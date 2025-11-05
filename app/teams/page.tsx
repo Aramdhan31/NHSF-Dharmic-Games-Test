@@ -255,9 +255,11 @@ export default function TeamsPage() {
       // 1. Create Firebase Auth user
       const userCred = await createUserWithEmailAndPassword(auth, email, password)
       const uid = userCred.user.uid
-      // 2. Save university data in Realtime Database
       
+      // 2. Find matching static university data to pre-populate sports (for LZ+SZ)
+      const staticUni = universities.find(u => u.name === name && u.zone === region)
       
+      // 3. Save university data in Realtime Database with pre-populated sports for LZ+SZ
       await set(ref(realtimeDb, "universities/" + uid), {
         id: uid,
         name,
@@ -267,12 +269,14 @@ export default function TeamsPage() {
         createdBy: uid,
         status: "competing",
         isCompeting: true, // Automatically set as competing when they sign up
-        sports: [],
+        // Pre-populate sports and teamInfo for LZ+SZ universities from static data
+        sports: staticUni?.sports || [],
+        teamInfo: staticUni?.teamInfo || {},
         members: 0,
         wins: 0,
         losses: 0,
         points: 0,
-        description: `${name} Hindu Society`,
+        description: staticUni?.description || `${name} Hindu Society`,
         tournamentDate: region === "NZ+CZ" ? "Nov 22, 2025" : "Nov 23, 2025",
         createdAt: Date.now(),
         lastUpdated: Date.now()

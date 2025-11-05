@@ -1,49 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { collection, setDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-
-const universities = [
-  // --- North & Central Zone (NZ+CZ)
-  "Aston", "Birmingham", "Cambridge", "Coventry", "DMU",
-  "Dundee", "East Anglia", "Edinburgh", "Keele", "Lancaster",
-  "Leeds", "Leicester", "Loughborough", "Manchester", "Northampton",
-  "Nottingham", "Nottingham Trent", "Sheffield", "UCLAN", "Warwick",
-  "York", "Derby",
-  // --- London & South Zone (LZ+SZ) - Competing universities only
-  "Bath", "Brighton & Sussex", "Bristol", "Brunel", "Cardiff", "City",
-  "Essex", "Imperial", "KCL", "LSE", "QMUL",
-  "Reading", "Royal Holloway", "Southampton", "UCL"
-];
+import { universities as staticUniversities } from '@/app/teams/page';
 
 export async function GET(request: NextRequest) {
   try {
     const col = collection(db, "universities");
 
-    for (const name of universities) {
-      const zone = [
-        "Aston","Birmingham","Cambridge","Coventry","DMU",
-        "Dundee","East Anglia","Edinburgh","Keele","Lancaster",
-        "Leeds","Leicester","Loughborough","Manchester","Northampton",
-        "Nottingham","Nottingham Trent","Sheffield","UCLAN","Warwick",
-        "York","Derby"
-      ].includes(name)
-        ? "NZ+CZ"
-        : "LZ+SZ";
+    // Get all universities from static data
+    const allUniversities = staticUniversities;
 
+    for (const staticUni of allUniversities) {
+      const name = staticUni.name;
+      const zone = staticUni.zone;
       const date = zone === "NZ+CZ" ? "2025-11-22" : "2025-11-23";
+
+      // Pre-populate sports and teamInfo for LZ+SZ from static data
+      const sports = staticUni.sports || [];
+      const teamInfo = staticUni.teamInfo || {};
+      const isCompeting = staticUni.isCompeting || false;
 
       await setDoc(doc(col, `uni-${name.toLowerCase().replace(/[^a-z]/g, "")}`), {
         name,
         zone,
         date,
-        status: "affiliated",
-        sports: [],
+        status: isCompeting ? "competing" : "affiliated",
+        sports: sports, // Pre-populated for LZ+SZ
+        teamInfo: teamInfo, // Pre-populated for LZ+SZ with Team A/B info
         members: 0,
         wins: 0,
         losses: 0,
         points: 0,
-        isCompeting: false,
-        description: `${name} Hindu Society`,
+        isCompeting: isCompeting,
+        description: staticUni.description || `${name} Hindu Society`,
+        tournamentDate: staticUni.tournamentDate || date,
         createdAt: new Date(),
         lastUpdated: new Date()
       });
@@ -52,7 +42,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       success: true,
       message: "✅ Universities added successfully",
-      count: universities.length
+      count: allUniversities.length
     });
   } catch (error: any) {
     console.error("Error adding universities:", error);

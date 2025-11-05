@@ -50,9 +50,9 @@ export const universities = [
 
   // ===== LONDON & SOUTH ZONE (LZ+SZ) - Nov 23, 2025 =====
   // Competing universities only - Sports from tournament table
-  // Sports array: strings for display compatibility
+  // Sports array: shows each sport once (even if Team A & B exist)
   // teamInfo: tracks Team A/B status for each sport (Team B locked until Team A opens)
-  { id: "18", name: "KCL", zone: "LZ+SZ", sports: ["Badminton (Team A)", "Football", "Kabaddi (men's)"], 
+  { id: "18", name: "KCL", zone: "LZ+SZ", sports: ["Badminton", "Football", "Kabaddi (men's)"], 
     teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
     members: 0, wins: 0, losses: 0, points: 0, description: "KCL Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "57", name: "Essex", zone: "LZ+SZ", sports: ["Badminton", "Football"],
@@ -61,10 +61,10 @@ export const universities = [
   { id: "31", name: "UCL", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },
     members: 0, wins: 0, losses: 0, points: 0, description: "UCL Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
-  { id: "53", name: "Brunel", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton (Team A)", "Badminton (Team B)", "Football (Team A)", "Football (Team B)", "Netball"],
+  { id: "53", name: "Brunel", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Netball": { teamA: { isOpen: true }, teamB: null } },
     members: 0, wins: 0, losses: 0, points: 0, description: "Brunel Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
-  { id: "20", name: "LSE", zone: "LZ+SZ", sports: ["Badminton (Team A)", "Football", "Netball", "Kabaddi (men's) (Team A)"],
+  { id: "20", name: "LSE", zone: "LZ+SZ", sports: ["Badminton", "Football", "Netball", "Kabaddi (men's)"],
     teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
     members: 0, wins: 0, losses: 0, points: 0, description: "LSE Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "24", name: "QMUL", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton"],
@@ -73,16 +73,16 @@ export const universities = [
   { id: "55", name: "City", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },
     members: 0, wins: 0, losses: 0, points: 0, description: "City Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
-  { id: "17", name: "Imperial", zone: "LZ+SZ", sports: ["Kho Kho (Team A)", "Badminton (Team A)", "Badminton (Team B)", "Football (Team A)", "Football (Team B)", "Kabaddi (men's) (Team A)"],
+  { id: "17", name: "Imperial", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Kabaddi (men's)"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
     members: 0, wins: 0, losses: 0, points: 0, description: "Imperial Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "26", name: "Royal Holloway", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball", "Kabaddi (men's)"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
     members: 0, wins: 0, losses: 0, points: 0, description: "Royal Holloway Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
-  { id: "54", name: "Cardiff", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton (Team A)", "Badminton (Team B)", "Football", "Netball"],
+  { id: "54", name: "Cardiff", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },
     members: 0, wins: 0, losses: 0, points: 0, description: "Cardiff Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
-  { id: "52", name: "Bristol", zone: "LZ+SZ", sports: ["Kho Kho (Team A)", "Kho Kho (Team B)", "Badminton (Team A)", "Badminton (Team B)", "Football (Team A)"],
+  { id: "52", name: "Bristol", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: null } },
     members: 0, wins: 0, losses: 0, points: 0, description: "Bristol Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "60", name: "Brighton & Sussex", zone: "LZ+SZ", sports: ["Badminton", "Football"],
@@ -704,39 +704,41 @@ export default function TeamsPage() {
                 )}
               </div>
 
-              {/* Non-Competing Universities Section */}
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                    <Users className="w-6 h-6 text-gray-600 mr-2" />
-                    Affiliated Universities ({filteredUniversities.length - competingUniversitiesList.length})
-                  </h2>
-                  <Badge className="bg-gray-100 text-gray-800 border-gray-300">
-                    Affiliated
-                  </Badge>
+              {/* Non-Competing Universities Section - Hidden for LZ+SZ */}
+              {selectedTournament !== "LZ+SZ" && (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                      <Users className="w-6 h-6 text-gray-600 mr-2" />
+                      Affiliated Universities ({filteredUniversities.length - competingUniversitiesList.length})
+                    </h2>
+                    <Badge className="bg-gray-100 text-gray-800 border-gray-300">
+                      Affiliated
+                    </Badge>
+                  </div>
+                  {(filteredUniversities.length - competingUniversitiesList.length) > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
+                      {filteredUniversities
+                        .filter(uni => !competingUniversitiesList.includes(uni))
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map((university) => (
+                          <UniversityCard
+                            key={university.id}
+                            university={university}
+                            onViewDetails={handleViewDetails}
+                            showAdminControls={false}
+                          />
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-gray-50 rounded-lg">
+                      <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">All registered universities are competing</p>
+                      <p className="text-sm text-gray-500 mt-2">Great participation!</p>
+                    </div>
+                  )}
                 </div>
-                {(filteredUniversities.length - competingUniversitiesList.length) > 0 ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
-                    {filteredUniversities
-                      .filter(uni => !competingUniversitiesList.includes(uni))
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((university) => (
-                        <UniversityCard
-                          key={university.id}
-                          university={university}
-                          onViewDetails={handleViewDetails}
-                          showAdminControls={false}
-                        />
-                      ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg">
-                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">All registered universities are competing</p>
-                    <p className="text-sm text-gray-500 mt-2">Great participation!</p>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           )}
 

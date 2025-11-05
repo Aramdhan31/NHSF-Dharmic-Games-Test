@@ -199,20 +199,15 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
         
         universitiesList
           .filter(uni => {
-            // Include all confirmed/registered universities (not just explicitly competing)
-            // Exclude only if explicitly marked as not-competing or affiliated
-            const isConfirmed = uni.isCompeting === true || 
-                               uni.status === 'competing' ||
-                               uni.status === 'active' ||
-                               uni.status === 'registered' ||
-                               (uni.status !== 'not-competing' && uni.status !== 'affiliated');
+            // Include ALL universities that are competing (isCompeting: true OR status: 'competing')
+            const isCompeting = uni.isCompeting === true || uni.status === 'competing';
             
             // Log universities being filtered out for debugging
-            if (!isConfirmed) {
-              console.log(`⚠️ Filtering out non-confirmed university: ${uni.name || uni.universityName} - isCompeting: ${uni.isCompeting}, status: ${uni.status}`);
+            if (!isCompeting) {
+              console.log(`⚠️ Filtering out non-competing university: ${uni.name || uni.universityName} - isCompeting: ${uni.isCompeting}, status: ${uni.status}`);
             }
             
-            return isConfirmed;
+            return isCompeting;
           })
           .forEach((uni: any, index: number) => {
           // Skip if university doesn't have required data
@@ -252,12 +247,9 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
           leagueEntries.push(entry);
         });
         
-        // Sort by total points (descending), then alphabetically by university name for same points
+        // Sort alphabetically by university name (always alphabetical order as requested)
         leagueEntries.sort((a, b) => {
-          if (b.totalPoints !== a.totalPoints) {
-            return b.totalPoints - a.totalPoints; // Higher points first
-          }
-          return a.university.localeCompare(b.university); // Alphabetical for same points
+          return a.university.localeCompare(b.university); // Alphabetical order
         });
         
         // Assign positions

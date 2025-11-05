@@ -176,11 +176,11 @@ export function LiveStatsCards() {
       player.status === 'active' || !player.status
     ).length;
     
-    // Calculate total sports teams
+    // Calculate total sports teams from all universities (including static)
     let totalSportsTeams = 0;
     const allSports = new Set();
     
-    universities.forEach(uni => {
+    allUniversitiesList.forEach(uni => {
       if (uni.sports && Array.isArray(uni.sports)) {
         uni.sports.forEach((sport: string) => {
           allSports.add(sport);

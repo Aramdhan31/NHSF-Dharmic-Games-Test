@@ -49,14 +49,15 @@ export class LivePointsSystem {
 
   /**
    * 🏆 Listen to match score changes
+   * Listen to both root matches and zone-specific matches
    */
   private setupMatchListeners() {
+    // Listen to root matches (if any)
     const matchesRef = ref(realtimeDb, 'matches');
-    
-    const unsubscribe = onValue(matchesRef, (snapshot) => {
+    const unsubscribeRoot = onValue(matchesRef, (snapshot) => {
       if (snapshot.exists()) {
         const matches = snapshot.val();
-        console.log('🏆 Match data changed - checking for points updates...');
+        console.log('🏆 Root match data changed - checking for points updates...');
         
         // Process each match for points calculation
         Object.entries(matches).forEach(([matchId, match]: [string, any]) => {
@@ -65,7 +66,31 @@ export class LivePointsSystem {
       }
     });
     
-    this.listeners['matches'] = unsubscribe;
+    // Listen to zone-specific matches (zones/{zone}/matches)
+    const zonesRef = ref(realtimeDb, 'zones');
+    const unsubscribeZones = onValue(zonesRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const zones = snapshot.val();
+        console.log('🏆 Zone match data changed - checking for points updates...');
+        
+        // Process matches from all zones
+        Object.entries(zones).forEach(([zoneName, zoneData]: [string, any]) => {
+          if (zoneData && zoneData.matches) {
+            Object.entries(zoneData.matches).forEach(([matchId, match]: [string, any]) => {
+              // Add zone to match data
+              const matchWithZone = { ...match, zone: zoneName };
+              this.processMatchForPoints(matchId, matchWithZone);
+            });
+          }
+        });
+      }
+    });
+    
+    // Store both listeners
+    this.listeners['matches'] = () => {
+      unsubscribeRoot();
+      unsubscribeZones();
+    };
   }
 
   /**
@@ -133,6 +158,11 @@ export class LivePointsSystem {
    * Handles both formats: teamA/teamB/scoreA/scoreB and team1/team2/team1Score/team2Score
    */
   private async processMatchForPoints(matchId: string, match: any) {
+    // Skip if already processed
+    if (this.processedMatches.has(matchId)) {
+      return;
+    }
+    
     // Handle both match formats
     const team1 = match.teamA || match.team1 || match.university1;
     const team2 = match.teamB || match.team2 || match.university2;
@@ -145,6 +175,9 @@ export class LivePointsSystem {
     }
     
     if (match.status !== 'completed') return;
+    
+    // Mark as processed
+    this.processedMatches.add(matchId);
     
     console.log('🎯 Processing match for points:', {
       matchId,

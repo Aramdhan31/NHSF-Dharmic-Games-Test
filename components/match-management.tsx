@@ -246,12 +246,14 @@ export function MatchManagement({ currentZone }: MatchManagementProps) {
       const currentScore = liveScore[matchId] || { team1: 0, team2: 0 }
       const formattedScore = sportConfig.displayFormat(currentScore.team1, currentScore.team2)
       
-      // Update match status to completed
+      // Update match status to completed with scores for live points system
       const result = await realtimeDbUtils.updateData(
         `zones/${currentZone}/matches/${matchId}`,
         { 
           status: 'completed', 
           score: formattedScore,
+          team1Score: currentScore.team1, // Add scores for live points system
+          team2Score: currentScore.team2,
           endedAt: new Date().toISOString()
         }
       )

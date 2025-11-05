@@ -9,13 +9,10 @@ const universities = [
   "Leeds", "Leicester", "Loughborough", "Manchester", "Northampton",
   "Nottingham", "Nottingham Trent", "Sheffield", "UCLAN", "Warwick",
   "York", "Derby",
-  // --- London & South Zone (LZ+SZ)
-  "ARU", "Bristol", "Brunel", "Cardiff", "City",
-  "East London", "Essex", "Exeter", "Greenwich", "Hertfordshire",
-  "Imperial", "KCL", "LSE", "Oxford",
-  "Oxford Brookes", "Plymouth", "Portsmouth", "QMUL",
-  "Royal Holloway", "St George's", "Swansea", "UCL", "Westminster",
-  "Reading"
+  // --- London & South Zone (LZ+SZ) - Competing universities only
+  "Bath", "Brighton & Sussex", "Bristol", "Brunel", "Cardiff", "City",
+  "Essex", "Imperial", "KCL", "LSE", "QMUL",
+  "Reading", "Royal Holloway", "Southampton", "UCL"
 ];
 
 export async function GET(request: NextRequest) {

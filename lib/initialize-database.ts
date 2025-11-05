@@ -29,29 +29,22 @@ const allUKUniversities = [
   { name: "York", zone: "NZ+CZ", abbreviation: "YOR" },
 
   // ===== LONDON & SOUTH ZONE (LZ+SZ) - Nov 23, 2025 =====
-  { name: "ARU", zone: "LZ+SZ", abbreviation: "ARU" },
-  { name: "Bristol", zone: "LZ+SZ", abbreviation: "BRI" },
-  { name: "Brunel", zone: "LZ+SZ", abbreviation: "BRU" },
-  { name: "Cardiff", zone: "LZ+SZ", abbreviation: "CAR" },
-  { name: "City", zone: "LZ+SZ", abbreviation: "CIT" },
-  { name: "East London", zone: "LZ+SZ", abbreviation: "EL" },
-  { name: "Essex", zone: "LZ+SZ", abbreviation: "ESS" },
-  { name: "Exeter", zone: "LZ+SZ", abbreviation: "EXE" },
-  { name: "Greenwich", zone: "LZ+SZ", abbreviation: "GRE" },
-  { name: "Hertfordshire", zone: "LZ+SZ", abbreviation: "HER" },
-  { name: "Imperial", zone: "LZ+SZ", abbreviation: "IMP" },
+  // Competing universities only
   { name: "KCL", zone: "LZ+SZ", abbreviation: "KCL" },
-  { name: "LSE", zone: "LZ+SZ", abbreviation: "LSE" },
-  { name: "Oxford", zone: "LZ+SZ", abbreviation: "OXF" },
-  { name: "Oxford Brookes", zone: "LZ+SZ", abbreviation: "OXB" },
-  { name: "Plymouth", zone: "LZ+SZ", abbreviation: "PLY" },
-  { name: "Portsmouth", zone: "LZ+SZ", abbreviation: "POR" },
-  { name: "QMUL", zone: "LZ+SZ", abbreviation: "QML" },
-  { name: "Royal Holloway", zone: "LZ+SZ", abbreviation: "RHU" },
-  { name: "St George's", zone: "LZ+SZ", abbreviation: "STG" },
-  { name: "Swansea", zone: "LZ+SZ", abbreviation: "SWA" },
+  { name: "Essex", zone: "LZ+SZ", abbreviation: "ESS" },
   { name: "UCL", zone: "LZ+SZ", abbreviation: "UCL" },
-  { name: "Westminster", zone: "LZ+SZ", abbreviation: "WES" }
+  { name: "Brunel", zone: "LZ+SZ", abbreviation: "BRU" },
+  { name: "LSE", zone: "LZ+SZ", abbreviation: "LSE" },
+  { name: "QMUL", zone: "LZ+SZ", abbreviation: "QML" },
+  { name: "City", zone: "LZ+SZ", abbreviation: "CIT" },
+  { name: "Imperial", zone: "LZ+SZ", abbreviation: "IMP" },
+  { name: "Royal Holloway", zone: "LZ+SZ", abbreviation: "RHU" },
+  { name: "Cardiff", zone: "LZ+SZ", abbreviation: "CAR" },
+  { name: "Bristol", zone: "LZ+SZ", abbreviation: "BRI" },
+  { name: "Brighton & Sussex", zone: "LZ+SZ", abbreviation: "BAS" },
+  { name: "Reading", zone: "LZ+SZ", abbreviation: "REA" },
+  { name: "Bath", zone: "LZ+SZ", abbreviation: "BAT" },
+  { name: "Southampton", zone: "LZ+SZ", abbreviation: "SOT" }
 ];
 
 export const initializeDatabase = async () => {

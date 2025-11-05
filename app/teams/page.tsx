@@ -49,33 +49,54 @@ export const universities = [
   { id: "39", name: "York", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "York Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
 
   // ===== LONDON & SOUTH ZONE (LZ+SZ) - Nov 23, 2025 =====
-  // Venue Capacity: Gym (9am-2pm), Sports Hall (8am-6pm), Hall (1pm-3pm), Sports Hall (12pm-3pm)
-  // Available Slots: AM - 1 Kho Kho, 3 Badminton, 1 Kho Kho | PM - 1 Netball, 1 Kabaddi, 2 Kho Kho
-  // Sport selections pending form submission to chapters
-  
-  { id: "5", name: "ARU", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Anglia Ruskin University - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "52", name: "Bristol", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Bristol Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "53", name: "Brunel", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Brunel Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "54", name: "Cardiff", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Cardiff Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "55", name: "City", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "City Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "56", name: "East London", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "East London Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "57", name: "Essex", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Essex Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "58", name: "Exeter", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Exeter Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "15", name: "Greenwich", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Greenwich Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "16", name: "Hertfordshire", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Hertfordshire Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "17", name: "Imperial", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Imperial Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "18", name: "KCL", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "KCL Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "20", name: "LSE", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "LSE Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "21", name: "Oxford", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Oxford Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "59", name: "Oxford Brookes", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Oxford Brookes Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "22", name: "Plymouth", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Plymouth Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "23", name: "Portsmouth", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Portsmouth Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "24", name: "QMUL", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "QMUL Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "26", name: "Royal Holloway", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Royal Holloway Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "28", name: "St George's", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "St George's Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "30", name: "Swansea", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Swansea Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "31", name: "UCL", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "UCL Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
-  { id: "32", name: "Westminster", zone: "LZ+SZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Westminster University Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 23, 2025", isCompeting: false },
+  // Competing universities only - Sports from tournament table
+  // Sports array: strings for display compatibility
+  // teamInfo: tracks Team A/B status for each sport (Team B locked until Team A opens)
+  { id: "18", name: "KCL", zone: "LZ+SZ", sports: ["Badminton (Team A)", "Football", "Kabaddi (men's)"], 
+    teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "KCL Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "57", name: "Essex", zone: "LZ+SZ", sports: ["Badminton", "Football"],
+    teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Essex Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "31", name: "UCL", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
+    teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "UCL Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "53", name: "Brunel", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton (Team A)", "Badminton (Team B)", "Football (Team A)", "Football (Team B)", "Netball"],
+    teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Netball": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Brunel Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "20", name: "LSE", zone: "LZ+SZ", sports: ["Badminton (Team A)", "Football", "Netball", "Kabaddi (men's) (Team A)"],
+    teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "LSE Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "24", name: "QMUL", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton"],
+    teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "QMUL Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "55", name: "City", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
+    teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "City Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "17", name: "Imperial", zone: "LZ+SZ", sports: ["Kho Kho (Team A)", "Badminton (Team A)", "Badminton (Team B)", "Football (Team A)", "Football (Team B)", "Kabaddi (men's) (Team A)"],
+    teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Imperial Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "26", name: "Royal Holloway", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball", "Kabaddi (men's)"],
+    teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Royal Holloway Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "54", name: "Cardiff", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton (Team A)", "Badminton (Team B)", "Football", "Netball"],
+    teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Cardiff Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "52", name: "Bristol", zone: "LZ+SZ", sports: ["Kho Kho (Team A)", "Kho Kho (Team B)", "Badminton (Team A)", "Badminton (Team B)", "Football (Team A)"],
+    teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Bristol Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "60", name: "Brighton & Sussex", zone: "LZ+SZ", sports: ["Badminton", "Football"],
+    teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Brighton & Sussex Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "61", name: "Reading", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football"],
+    teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Reading Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "62", name: "Bath", zone: "LZ+SZ", sports: ["Badminton", "Football"],
+    teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Bath Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
+  { id: "63", name: "Southampton", zone: "LZ+SZ", sports: ["Football"],
+    teamInfo: { "Football": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Southampton Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
 ]
 
 export default function TeamsPage() {
@@ -148,20 +169,33 @@ export default function TeamsPage() {
     const q = query(universitiesRef, orderBy("name"))
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const registeredUniversities = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        zone: doc.data().zone || "Unknown",
-        sports: doc.data().sports || [],
-        members: doc.data().members || 0,
-        wins: doc.data().wins || 0,
-        losses: doc.data().losses || 0,
-        points: doc.data().points || 0,
-        description: doc.data().description || `${doc.data().name} Hindu Society`,
-        tournamentDate: doc.data().date === "2025-11-22" ? "Nov 22, 2025" : "Nov 23, 2025",
-        isCompeting: doc.data().status === "competing" || doc.data().isCompeting === true,
-        isRegistered: true
-      }))
+      const registeredUniversities = snapshot.docs.map(doc => {
+        const firebaseData = doc.data()
+        const universityName = firebaseData.name || ""
+        
+        // Find matching static university data to merge sports and teamInfo
+        const staticUni = universities.find(u => u.name === universityName)
+        
+        return {
+          id: doc.id,
+          ...firebaseData,
+          zone: firebaseData.zone || "Unknown",
+          // Use sports from Firebase if available, otherwise use static data
+          sports: firebaseData.sports && firebaseData.sports.length > 0 && firebaseData.sports[0] !== "TBD" 
+            ? firebaseData.sports 
+            : (staticUni?.sports || []),
+          // Merge teamInfo from static data if available
+          teamInfo: staticUni?.teamInfo || firebaseData.teamInfo || {},
+          members: firebaseData.members || 0,
+          wins: firebaseData.wins || 0,
+          losses: firebaseData.losses || 0,
+          points: firebaseData.points || 0,
+          description: firebaseData.description || staticUni?.description || `${universityName} Hindu Society`,
+          tournamentDate: firebaseData.date === "2025-11-22" ? "Nov 22, 2025" : (staticUni?.tournamentDate || "Nov 23, 2025"),
+          isCompeting: firebaseData.status === "competing" || firebaseData.isCompeting === true || staticUni?.isCompeting === true,
+          isRegistered: true
+        }
+      })
       
       // Separate universities into competing and not competing, then sort each group alphabetically
       const competingUniversities = registeredUniversities

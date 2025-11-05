@@ -26,31 +26,22 @@ const allUniversities = [
   { name: "York", zone: "NZ+CZ", abbr: "YOR" },
   { name: "Derby", zone: "NZ+CZ", abbr: "DER" },
 
-  // LONDON & SOUTH ZONE (LZ+SZ)
-  { name: "ARU", zone: "LZ+SZ", abbr: "ARU" },
-  { name: "Bristol", zone: "LZ+SZ", abbr: "BRI" },
-  { name: "Brunel", zone: "LZ+SZ", abbr: "BRU" },
-  { name: "Cardiff", zone: "LZ+SZ", abbr: "CAR" },
-  { name: "City", zone: "LZ+SZ", abbr: "CIT" },
-  { name: "East London", zone: "LZ+SZ", abbr: "EL" },
-  { name: "Essex", zone: "LZ+SZ", abbr: "ESS" },
-  { name: "Exeter", zone: "LZ+SZ", abbr: "EXE" },
-  { name: "Greenwich", zone: "LZ+SZ", abbr: "GRE" },
-  { name: "Hertfordshire", zone: "LZ+SZ", abbr: "HER" },
-  { name: "Imperial", zone: "LZ+SZ", abbr: "IMP" },
+  // LONDON & SOUTH ZONE (LZ+SZ) - Competing universities only
   { name: "KCL", zone: "LZ+SZ", abbr: "KCL" },
-  { name: "LSE", zone: "LZ+SZ", abbr: "LSE" },
-  { name: "Oxford", zone: "LZ+SZ", abbr: "OXF" },
-  { name: "Oxford Brookes", zone: "LZ+SZ", abbr: "OXB" },
-  { name: "Plymouth", zone: "LZ+SZ", abbr: "PLY" },
-  { name: "Portsmouth", zone: "LZ+SZ", abbr: "POR" },
-  { name: "QMUL", zone: "LZ+SZ", abbr: "QML" },
-  { name: "Royal Holloway", zone: "LZ+SZ", abbr: "RH" },
-  { name: "St George's", zone: "LZ+SZ", abbr: "SG" },
-  { name: "Swansea", zone: "LZ+SZ", abbr: "SWA" },
+  { name: "Essex", zone: "LZ+SZ", abbr: "ESS" },
   { name: "UCL", zone: "LZ+SZ", abbr: "UCL" },
-  { name: "Westminster", zone: "LZ+SZ", abbr: "WES" },
-  { name: "Reading", zone: "LZ+SZ", abbr: "REA" }
+  { name: "Brunel", zone: "LZ+SZ", abbr: "BRU" },
+  { name: "LSE", zone: "LZ+SZ", abbr: "LSE" },
+  { name: "QMUL", zone: "LZ+SZ", abbr: "QML" },
+  { name: "City", zone: "LZ+SZ", abbr: "CIT" },
+  { name: "Imperial", zone: "LZ+SZ", abbr: "IMP" },
+  { name: "Royal Holloway", zone: "LZ+SZ", abbr: "RHU" },
+  { name: "Cardiff", zone: "LZ+SZ", abbr: "CAR" },
+  { name: "Bristol", zone: "LZ+SZ", abbr: "BRI" },
+  { name: "Brighton & Sussex", zone: "LZ+SZ", abbr: "BAS" },
+  { name: "Reading", zone: "LZ+SZ", abbr: "REA" },
+  { name: "Bath", zone: "LZ+SZ", abbr: "BAT" },
+  { name: "Southampton", zone: "LZ+SZ", abbr: "SOT" }
 ];
 
 // Function to populate universities

@@ -350,6 +350,25 @@ export default function AdminDashboardPage() {
         console.warn('Failed to fetch admin requests:', e)
       }
     }
+
+    const fetchAdmins = async () => {
+      try {
+        if (!adminCheck?.isSuperAdmin) return
+        setLoadingAdmins(true)
+        const res = await fetch('/api/admin-management')
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        if (data.success && data.admins) {
+          setAdmins(data.admins || [])
+          console.log('✅ Loaded admins:', data.admins.length)
+        }
+      } catch (e) {
+        console.warn('Failed to fetch admins:', e)
+      } finally {
+        setLoadingAdmins(false)
+      }
+    }
+
     fetchAdminRequests()
 
       const interval = adminCheck?.isSuperAdmin ? setInterval(() => {

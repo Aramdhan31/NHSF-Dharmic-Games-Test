@@ -575,8 +575,10 @@ export default function AdminDashboardPage() {
         isCompeting: doc.data().status === "competing" || doc.data().isCompeting === true,
         status: doc.data().status || "affiliated"
       }))
+      // Sort universities alphabetically by name
+      universitiesData.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
       setUniversities(universitiesData)
-      console.log('✅ Universities loaded:', universitiesData.length)
+      console.log('✅ Universities loaded (sorted alphabetically):', universitiesData.length)
       
       // Load players
       console.log('🔄 Loading players...')

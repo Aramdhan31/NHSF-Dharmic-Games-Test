@@ -14,7 +14,13 @@ interface ContactData {
   contactEmail?: string;
   contactPhone?: string;
   contactRole?: string;
-  [key: string]: any; // For other fields
+  contacts?: Array<{
+    contactPerson?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    contactRole?: string;
+  }>;
+  [key: string]: any; // For other fields from spreadsheet
 }
 
 export async function POST(request: NextRequest) {
@@ -134,13 +140,56 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
   const contactEmailIndex = findColumnIndex(['main contact person email', 'contact email', 'email']);
   const contactPhoneIndex = findColumnIndex(['main contact person phone', 'contact phone', 'phone number', 'phone', 'mobile']);
   const contactRoleIndex = findColumnIndex(['main contact person role', 'contact role', 'role', 'position']);
+  
+  // Look for second contact person fields - try multiple variations
+  const secondContactPersonIndex = findColumnIndex([
+    'second contact person name', 
+    'contact person 2', 
+    'contact 2 name', 
+    'additional contact',
+    'second contact',
+    '2nd contact person',
+    'second poc',
+    'poc 2'
+  ]);
+  const secondContactEmailIndex = findColumnIndex([
+    'second contact person email', 
+    'contact 2 email', 
+    'additional contact email',
+    'second contact email',
+    '2nd contact email',
+    'second poc email',
+    'poc 2 email'
+  ]);
+  const secondContactPhoneIndex = findColumnIndex([
+    'second contact person phone', 
+    'contact 2 phone', 
+    'additional contact phone',
+    'second contact phone',
+    '2nd contact phone',
+    'second poc phone',
+    'poc 2 phone'
+  ]);
+  const secondContactRoleIndex = findColumnIndex([
+    'second contact person role', 
+    'contact 2 role', 
+    'additional contact role',
+    'second contact role',
+    '2nd contact role',
+    'second poc role',
+    'poc 2 role'
+  ]);
 
   console.log('📊 Column indices:', {
     universityName: universityNameIndex,
     contactPerson: contactPersonIndex,
     contactEmail: contactEmailIndex,
     contactPhone: contactPhoneIndex,
-    contactRole: contactRoleIndex
+    contactRole: contactRoleIndex,
+    secondContactPerson: secondContactPersonIndex,
+    secondContactEmail: secondContactEmailIndex,
+    secondContactPhone: secondContactPhoneIndex,
+    secondContactRole: secondContactRoleIndex
   });
 
   if (universityNameIndex === -1) {
@@ -161,22 +210,84 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
     if (!universityName || universityName === '') {
       continue;
     }
+    
+    // Capture all columns A-J (indices 0-9) except excluded columns
+    // Store additional fields from spreadsheet
+    const additionalFields: any = {};
+    for (let colIndex = 0; colIndex < Math.min(headers.length, 10); colIndex++) {
+      // Skip excluded columns (K-P = indices 10-15)
+      if (EXCLUDE_COLUMNS.includes(colIndex)) {
+        continue;
+      }
+      
+      // Skip columns we're already capturing
+      if (colIndex === universityNameIndex || 
+          colIndex === contactPersonIndex || 
+          colIndex === contactEmailIndex || 
+          colIndex === contactPhoneIndex || 
+          colIndex === contactRoleIndex ||
+          colIndex === secondContactPersonIndex ||
+          colIndex === secondContactEmailIndex ||
+          colIndex === secondContactPhoneIndex ||
+          colIndex === secondContactRoleIndex) {
+        continue;
+      }
+      
+      // Capture other fields
+      const headerName = headers[colIndex] ? String(headers[colIndex]).trim() : '';
+      const cellValue = row[colIndex] ? String(row[colIndex]).trim() : '';
+      if (headerName && cellValue) {
+        // Convert header to camelCase for storage
+        const fieldName = headerName.toLowerCase()
+          .replace(/[^a-z0-9]+/g, '_')
+          .replace(/^_+|_+$/g, '');
+        additionalFields[fieldName] = cellValue;
+      }
+    }
 
     // Build contact data object
-    const contactData: ContactData = {
-      universityName,
-      zone,
+    const mainContact = {
       contactPerson: contactPersonIndex !== -1 && row[contactPersonIndex] ? String(row[contactPersonIndex]).trim() : '',
       contactEmail: contactEmailIndex !== -1 && row[contactEmailIndex] ? String(row[contactEmailIndex]).trim() : '',
       contactPhone: contactPhoneIndex !== -1 && row[contactPhoneIndex] ? String(row[contactPhoneIndex]).trim() : '',
       contactRole: contactRoleIndex !== -1 && row[contactRoleIndex] ? String(row[contactRoleIndex]).trim() : ''
+    };
+    
+    // Build second contact if available
+    const secondContact = {
+      contactPerson: secondContactPersonIndex !== -1 && row[secondContactPersonIndex] ? String(row[secondContactPersonIndex]).trim() : '',
+      contactEmail: secondContactEmailIndex !== -1 && row[secondContactEmailIndex] ? String(row[secondContactEmailIndex]).trim() : '',
+      contactPhone: secondContactPhoneIndex !== -1 && row[secondContactPhoneIndex] ? String(row[secondContactPhoneIndex]).trim() : '',
+      contactRole: secondContactRoleIndex !== -1 && row[secondContactRoleIndex] ? String(row[secondContactRoleIndex]).trim() : ''
+    };
+    
+    // Build contacts array if we have multiple contacts
+    const contacts: any[] = [];
+    if (mainContact.contactPerson || mainContact.contactEmail || mainContact.contactPhone) {
+      contacts.push(mainContact);
+    }
+    if (secondContact.contactPerson || secondContact.contactEmail || secondContact.contactPhone) {
+      contacts.push(secondContact);
+    }
+    
+    const contactData: ContactData = {
+      universityName,
+      zone,
+      contactPerson: mainContact.contactPerson,
+      contactEmail: mainContact.contactEmail,
+      contactPhone: mainContact.contactPhone,
+      contactRole: mainContact.contactRole,
+      contacts: contacts.length > 0 ? contacts : undefined,
+      ...additionalFields // Include all other fields from spreadsheet
     };
 
     console.log(`📊 Parsed ${universityName}:`, {
       contactPerson: contactData.contactPerson,
       contactEmail: contactData.contactEmail,
       contactPhone: contactData.contactPhone,
-      contactRole: contactData.contactRole
+      contactRole: contactData.contactRole,
+      contactsCount: contacts.length,
+      secondContact: secondContact.contactPerson || secondContact.contactEmail || secondContact.contactPhone ? 'Found' : 'Not found'
     });
 
     if (contactData.universityName) {
@@ -220,7 +331,7 @@ async function saveContactsToFirebase(contacts: { lz: ContactData[], sz: Contact
         }
       });
 
-      const contactData = {
+      const contactData: any = {
         contactPerson: contact.contactPerson || '',
         contactEmail: contact.contactEmail || '',
         contactPhone: contact.contactPhone || '',
@@ -228,6 +339,20 @@ async function saveContactsToFirebase(contacts: { lz: ContactData[], sz: Contact
         lastUpdated: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+      
+      // Always include contacts array if available (even if only one contact)
+      // This ensures consistency and allows for easy addition of more contacts later
+      if (contact.contacts && contact.contacts.length > 0) {
+        contactData.contacts = contact.contacts;
+      } else if (contact.contactPerson || contact.contactEmail || contact.contactPhone) {
+        // If no contacts array but we have main contact, create one
+        contactData.contacts = [{
+          contactPerson: contact.contactPerson || '',
+          contactEmail: contact.contactEmail || '',
+          contactPhone: contact.contactPhone || '',
+          contactRole: contact.contactRole || ''
+        }];
+      }
 
       console.log(`📊 Contact data for ${universityName}:`, contactData);
 

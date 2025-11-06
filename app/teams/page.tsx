@@ -78,7 +78,7 @@ export const universities = [
     members: 0, wins: 0, losses: 0, points: 0, description: "QMUL Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "55", name: "City", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },
-    contactPerson: "Dhanisha Patel", contactRole: "President", contactEmail: "dhanisha.p155@gmail.com", contactPhone: "7401982997",
+    contactPerson: "Dhanisha Patel", contactRole: "President", contactEmail: "dhanisha.p155@gmail.com", contactPhone: "07401982997",
     members: 0, wins: 0, losses: 0, points: 0, description: "City Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "17", name: "Imperial", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Kabaddi (men's)"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },

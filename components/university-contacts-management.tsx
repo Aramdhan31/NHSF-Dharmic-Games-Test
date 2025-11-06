@@ -110,10 +110,17 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
     const unsubscribe = onSnapshot(q, (snapshot) => {
       console.log('🔄 Universities data changed in contact management - AUTO-UPDATING');
       
-      let universitiesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as UniversityContact[];
+      let universitiesData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        // Log contacts array for debugging
+        if (data.contacts && Array.isArray(data.contacts)) {
+          console.log(`📊 ${data.name}: Found ${data.contacts.length} contacts in Firestore:`, data.contacts);
+        }
+        return {
+          id: doc.id,
+          ...data
+        };
+      }) as UniversityContact[];
       
       // Merge with static universities to include contact details
       const staticCompetingUnis = staticUniversities.filter(uni => uni.isCompeting === true);
@@ -164,16 +171,18 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
               contactEmail: existing.contactEmail || staticUni.contactEmail || '',
               contactPhone: existing.contactPhone || staticUni.contactPhone || '',
               contactRole: existing.contactRole || staticUni.contactRole || '',
-              // Merge contacts array - use static contacts if available, otherwise keep existing
-              contacts: staticUni.contacts && staticUni.contacts.length > 0 
-                ? staticUni.contacts 
-                : (existing.contacts && existing.contacts.length > 0 
-                  ? existing.contacts 
-                  : (staticUni.contactPerson ? [{ 
-                      contactPerson: staticUni.contactPerson, 
-                      contactEmail: staticUni.contactEmail, 
-                      contactPhone: staticUni.contactPhone, 
-                      contactRole: staticUni.contactRole 
+              // Merge contacts array - prioritize Firestore contacts (from Excel upload) over static
+              // If Firestore has contacts, use those (they're more up-to-date)
+              // Otherwise, use static contacts, or create from single contact fields
+              contacts: existing.contacts && existing.contacts.length > 0
+                ? existing.contacts
+                : (staticUni.contacts && staticUni.contacts.length > 0 
+                  ? staticUni.contacts 
+                  : (staticUni.contactPerson || existing.contactPerson ? [{ 
+                      contactPerson: existing.contactPerson || staticUni.contactPerson, 
+                      contactEmail: existing.contactEmail || staticUni.contactEmail, 
+                      contactPhone: existing.contactPhone || staticUni.contactPhone, 
+                      contactRole: existing.contactRole || staticUni.contactRole 
                     }] : []))
             };
           }
@@ -265,16 +274,18 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
               contactEmail: existing.contactEmail || staticUni.contactEmail || '',
               contactPhone: existing.contactPhone || staticUni.contactPhone || '',
               contactRole: existing.contactRole || staticUni.contactRole || '',
-              // Merge contacts array - use static contacts if available, otherwise keep existing
-              contacts: staticUni.contacts && staticUni.contacts.length > 0 
-                ? staticUni.contacts 
-                : (existing.contacts && existing.contacts.length > 0 
-                  ? existing.contacts 
-                  : (staticUni.contactPerson ? [{ 
-                      contactPerson: staticUni.contactPerson, 
-                      contactEmail: staticUni.contactEmail, 
-                      contactPhone: staticUni.contactPhone, 
-                      contactRole: staticUni.contactRole 
+              // Merge contacts array - prioritize Firestore contacts (from Excel upload) over static
+              // If Firestore has contacts, use those (they're more up-to-date)
+              // Otherwise, use static contacts, or create from single contact fields
+              contacts: existing.contacts && existing.contacts.length > 0
+                ? existing.contacts
+                : (staticUni.contacts && staticUni.contacts.length > 0 
+                  ? staticUni.contacts 
+                  : (staticUni.contactPerson || existing.contactPerson ? [{ 
+                      contactPerson: existing.contactPerson || staticUni.contactPerson, 
+                      contactEmail: existing.contactEmail || staticUni.contactEmail, 
+                      contactPhone: existing.contactPhone || staticUni.contactPhone, 
+                      contactRole: existing.contactRole || staticUni.contactRole 
                     }] : []))
             };
           }
@@ -759,7 +770,12 @@ function UniversityContactCard({
               <div className="space-y-3">
                 {/* Display multiple contacts if available, otherwise fall back to single contact */}
                 {(() => {
-                  const contactsList = university.contacts && university.contacts.length > 0 
+                  // Debug logging
+                  console.log(`📊 ${university.name}: contacts array:`, university.contacts);
+                  console.log(`📊 ${university.name}: contacts is array:`, Array.isArray(university.contacts));
+                  console.log(`📊 ${university.name}: contacts length:`, university.contacts?.length);
+                  
+                  const contactsList = university.contacts && Array.isArray(university.contacts) && university.contacts.length > 0 
                     ? university.contacts 
                     : (university.contactPerson || university.contactEmail || university.contactPhone 
                       ? [{ 
@@ -769,6 +785,8 @@ function UniversityContactCard({
                           contactRole: university.contactRole 
                         }] 
                       : []);
+                  
+                  console.log(`📊 ${university.name}: Final contactsList length:`, contactsList.length);
                   
                   if (contactsList.length === 0) {
                     return (

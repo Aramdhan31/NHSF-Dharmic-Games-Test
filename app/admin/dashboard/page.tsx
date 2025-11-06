@@ -236,12 +236,17 @@ export default function AdminDashboardPage() {
     
     const universitiesUnsubscribe = onSnapshot(q, (snapshot) => {
       try {
-        console.log('🏛️ Universities data changed in admin dashboard')
+        console.log('🏛️ Universities data changed in admin dashboard - ALL ADMINS WILL SEE THIS UPDATE')
         const universitiesList = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           zone: doc.data().zone || "Unknown",
           sports: doc.data().sports || [],
+          teamInfo: doc.data().teamInfo || {},
+          contactPerson: doc.data().contactPerson || '',
+          contactEmail: doc.data().contactEmail || '',
+          contactPhone: doc.data().contactPhone || '',
+          contactRole: doc.data().contactRole || '',
           members: doc.data().members || 0,
           wins: doc.data().wins || 0,
           losses: doc.data().losses || 0,
@@ -258,8 +263,8 @@ export default function AdminDashboardPage() {
           id: uni.id || `uni-${index}-${Date.now()}`
         }))
         setUniversities(universitiesWithIds)
-        console.log('📊 Universities updated:', universitiesWithIds.length)
-        console.log('📊 Sample university:', universitiesWithIds[0])
+        console.log('📊 Universities updated in real-time:', universitiesWithIds.length)
+        console.log('📊 Competing universities:', universitiesWithIds.filter(u => u.isCompeting).length)
       } catch (error) {
         console.error('❌ Error in universities listener:', error)
       }
@@ -271,9 +276,7 @@ export default function AdminDashboardPage() {
     const playersRef = ref(realtimeDb, 'players')
     const playersUnsubscribe = onValue(playersRef, (snapshot) => {
       try {
-        console.log('👥 Players listener triggered')
-        console.log('👥 User auth state:', user?.email, 'Authenticated:', !!user)
-        console.log('👥 Admin check result:', adminCheck)
+        console.log('👥 Players listener triggered - ALL ADMINS WILL SEE THIS UPDATE')
         
         if (snapshot.exists()) {
           const data = snapshot.val()
@@ -284,15 +287,16 @@ export default function AdminDashboardPage() {
             id: player.id || `player-${index}-${Date.now()}`
           }))
           setPlayers(playersWithIds)
-          console.log('👥 Players updated:', playersWithIds.length)
-          console.log('👥 Sample player:', playersWithIds[0])
+          console.log('👥 Players updated in real-time:', playersWithIds.length)
         } else {
-          console.log('👥 No players data found')
-          setPlayers([])
+          console.log('👥 No players data found in Realtime DB, trying Firestore...')
+          // Try loading from Firestore or universities
+          loadPlayersFromUniversities()
         }
       } catch (error) {
         console.error('❌ Error in players listener:', error)
-        console.error('❌ Error details:', error)
+        // Try fallback loading
+        loadPlayersFromUniversities()
       }
     }, (error) => {
       console.error('❌ Players listener error:', error)
@@ -1275,21 +1279,31 @@ export default function AdminDashboardPage() {
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {universities
-                    .filter(uni => {
-                      // Filter by search term
-                      const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
-                      
-                      // Filter by zone
-                      const matchesZone = selectedZone === 'ALL' || uni.zone === selectedZone || uni.region === selectedZone
-                      
-                      // Filter by competing status
-                      const isCompeting = uni.isCompeting === true || uni.status === 'competing'
-                      const showThisUniversity = showNonCompeting ? true : isCompeting
-                      
-                      return matchesSearch && matchesZone && showThisUniversity
-                    })
+                {/* Show competing universities first, then others */}
+                <div className="space-y-6">
+                  {/* Competing Universities Section */}
+                  <div>
+                    <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span>Competing Universities</span>
+                      <Badge className="ml-2">
+                        {universities.filter(uni => {
+                          const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
+                          const matchesZone = selectedZone === 'ALL' || uni.zone === selectedZone || uni.region === selectedZone
+                          const isCompeting = uni.isCompeting === true || uni.status === 'competing'
+                          return matchesSearch && matchesZone && isCompeting
+                        }).length}
+                      </Badge>
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {universities
+                        .filter(uni => {
+                          const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
+                          const matchesZone = selectedZone === 'ALL' || uni.zone === selectedZone || uni.region === selectedZone
+                          const isCompeting = uni.isCompeting === true || uni.status === 'competing'
+                          return matchesSearch && matchesZone && isCompeting
+                        })
+                        .sort((a, b) => a.name.localeCompare(b.name))
                     .map((uni, index) => (
                     <Card key={uni.id || `uni-${index}`} className="hover:shadow-lg transition-shadow">
                       <CardHeader>

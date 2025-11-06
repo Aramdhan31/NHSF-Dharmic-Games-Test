@@ -113,12 +113,20 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
       let universitiesData = snapshot.docs.map(doc => {
         const data = doc.data();
         // Log contacts array for debugging
-        if (data.contacts && Array.isArray(data.contacts)) {
-          console.log(`📊 ${data.name}: Found ${data.contacts.length} contacts in Firestore:`, data.contacts);
+        if (data.contacts) {
+          if (Array.isArray(data.contacts)) {
+            console.log(`📊 ${data.name}: Found ${data.contacts.length} contacts in Firestore:`, data.contacts);
+          } else {
+            console.log(`⚠️ ${data.name}: contacts is not an array:`, typeof data.contacts, data.contacts);
+          }
+        } else {
+          console.log(`📊 ${data.name}: No contacts array in Firestore`);
         }
         return {
           id: doc.id,
-          ...data
+          ...data,
+          // Ensure contacts is always an array if it exists
+          contacts: data.contacts && Array.isArray(data.contacts) ? data.contacts : (data.contacts ? [data.contacts] : undefined)
         };
       }) as UniversityContact[];
       
@@ -171,12 +179,12 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
               contactEmail: existing.contactEmail || staticUni.contactEmail || '',
               contactPhone: existing.contactPhone || staticUni.contactPhone || '',
               contactRole: existing.contactRole || staticUni.contactRole || '',
-              // Merge contacts array - prioritize Firestore contacts (from Excel upload) over static
-              // If Firestore has contacts, use those (they're more up-to-date)
-              // Otherwise, use static contacts, or create from single contact fields
-              contacts: existing.contacts && existing.contacts.length > 0
-                ? existing.contacts
-                : (staticUni.contacts && staticUni.contacts.length > 0 
+              // CRITICAL: Prioritize Firestore contacts (from Excel upload) over static
+              // If Firestore has contacts array, ALWAYS use those (they're from Excel upload)
+              // Only use static contacts if Firestore has NO contacts array
+              contacts: (existing.contacts && Array.isArray(existing.contacts) && existing.contacts.length > 0)
+                ? existing.contacts  // Use Firestore contacts (from Excel) - these are the most up-to-date
+                : (staticUni.contacts && Array.isArray(staticUni.contacts) && staticUni.contacts.length > 0 
                   ? staticUni.contacts 
                   : (staticUni.contactPerson || existing.contactPerson ? [{ 
                       contactPerson: existing.contactPerson || staticUni.contactPerson, 
@@ -185,6 +193,13 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
                       contactRole: existing.contactRole || staticUni.contactRole 
                     }] : []))
             };
+            
+            // Debug logging for contacts merge
+            if (existing.contacts && Array.isArray(existing.contacts) && existing.contacts.length > 0) {
+              console.log(`✅ ${existing.name}: Using Firestore contacts (${existing.contacts.length} contacts) - NOT overwriting with static`);
+            } else if (staticUni.contacts && Array.isArray(staticUni.contacts) && staticUni.contacts.length > 0) {
+              console.log(`📊 ${existing.name}: Using static contacts (${staticUni.contacts.length} contacts) - Firestore has no contacts array`);
+            }
           }
         }
       });
@@ -274,12 +289,12 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
               contactEmail: existing.contactEmail || staticUni.contactEmail || '',
               contactPhone: existing.contactPhone || staticUni.contactPhone || '',
               contactRole: existing.contactRole || staticUni.contactRole || '',
-              // Merge contacts array - prioritize Firestore contacts (from Excel upload) over static
-              // If Firestore has contacts, use those (they're more up-to-date)
-              // Otherwise, use static contacts, or create from single contact fields
-              contacts: existing.contacts && existing.contacts.length > 0
-                ? existing.contacts
-                : (staticUni.contacts && staticUni.contacts.length > 0 
+              // CRITICAL: Prioritize Firestore contacts (from Excel upload) over static
+              // If Firestore has contacts array, ALWAYS use those (they're from Excel upload)
+              // Only use static contacts if Firestore has NO contacts array
+              contacts: (existing.contacts && Array.isArray(existing.contacts) && existing.contacts.length > 0)
+                ? existing.contacts  // Use Firestore contacts (from Excel) - these are the most up-to-date
+                : (staticUni.contacts && Array.isArray(staticUni.contacts) && staticUni.contacts.length > 0 
                   ? staticUni.contacts 
                   : (staticUni.contactPerson || existing.contactPerson ? [{ 
                       contactPerson: existing.contactPerson || staticUni.contactPerson, 
@@ -288,6 +303,13 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
                       contactRole: existing.contactRole || staticUni.contactRole 
                     }] : []))
             };
+            
+            // Debug logging for contacts merge
+            if (existing.contacts && Array.isArray(existing.contacts) && existing.contacts.length > 0) {
+              console.log(`✅ ${existing.name}: Using Firestore contacts (${existing.contacts.length} contacts) - NOT overwriting with static`);
+            } else if (staticUni.contacts && Array.isArray(staticUni.contacts) && staticUni.contacts.length > 0) {
+              console.log(`📊 ${existing.name}: Using static contacts (${staticUni.contacts.length} contacts) - Firestore has no contacts array`);
+            }
           }
         }
       });

@@ -135,48 +135,72 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
     return -1;
   };
 
-  const universityNameIndex = findColumnIndex(['university name', 'university', 'name', 'uni']);
-  const contactPersonIndex = findColumnIndex(['main contact person name', 'contact person', 'contact name', 'name']);
-  const contactEmailIndex = findColumnIndex(['main contact person email', 'contact email', 'email']);
-  const contactPhoneIndex = findColumnIndex(['main contact person phone', 'contact phone', 'phone number', 'phone', 'mobile']);
-  const contactRoleIndex = findColumnIndex(['main contact person role', 'contact role', 'role', 'position']);
+  // Find university name - could be "Chapter" or "University Name" or "Name"
+  const universityNameIndex = findColumnIndex(['chapter', 'university name', 'university', 'name', 'uni']);
   
-  // Look for second contact person fields - try multiple variations
+  // Find main contact person - could be "Name" or "1st POC" related
+  const contactPersonIndex = findColumnIndex(['name', 'main contact person name', 'contact person', 'contact name', '1st poc name', 'first poc name']);
+  
+  // Find main contact email - "1st POC - Email"
+  const contactEmailIndex = findColumnIndex(['1st poc - email', '1st poc email', 'first poc email', 'main contact person email', 'contact email', 'email', '1st poc', 'first poc']);
+  
+  // Find main contact phone - "1st POC - Phone Number"
+  const contactPhoneIndex = findColumnIndex(['1st poc - phone number', '1st poc phone', 'first poc phone', 'main contact person phone', 'contact phone', 'phone number', 'phone', 'mobile', '1st poc - phone']);
+  
+  // Find main contact role - could be "Role"
+  const contactRoleIndex = findColumnIndex(['role', 'main contact person role', 'contact role', 'position', '1st poc role']);
+  
+  // Find second contact email - "2nd POC - Email"
+  const secondContactEmailIndex = findColumnIndex([
+    '2nd poc - email',
+    '2nd poc email', 
+    'second poc email',
+    'second contact person email', 
+    'contact 2 email', 
+    'additional contact email',
+    'second contact email',
+    '2nd contact email',
+    'poc 2 email',
+    'second poc - email'
+  ]);
+  
+  // Find second contact phone - "2nd POC - Phone Number"
+  const secondContactPhoneIndex = findColumnIndex([
+    '2nd poc - phone number',
+    '2nd poc phone',
+    'second poc phone',
+    'second contact person phone', 
+    'contact 2 phone', 
+    'additional contact phone',
+    'second contact phone',
+    '2nd contact phone',
+    'poc 2 phone',
+    '2nd poc - phone',
+    'second poc - phone number'
+  ]);
+  
+  // Second contact person name - might not be in spreadsheet, but check anyway
   const secondContactPersonIndex = findColumnIndex([
+    '2nd poc name',
+    'second poc name',
     'second contact person name', 
     'contact person 2', 
     'contact 2 name', 
     'additional contact',
     'second contact',
     '2nd contact person',
-    'second poc',
-    'poc 2'
+    'poc 2 name'
   ]);
-  const secondContactEmailIndex = findColumnIndex([
-    'second contact person email', 
-    'contact 2 email', 
-    'additional contact email',
-    'second contact email',
-    '2nd contact email',
-    'second poc email',
-    'poc 2 email'
-  ]);
-  const secondContactPhoneIndex = findColumnIndex([
-    'second contact person phone', 
-    'contact 2 phone', 
-    'additional contact phone',
-    'second contact phone',
-    '2nd contact phone',
-    'second poc phone',
-    'poc 2 phone'
-  ]);
+  
+  // Second contact role - might not be in spreadsheet
   const secondContactRoleIndex = findColumnIndex([
+    '2nd poc role',
+    'second poc role',
     'second contact person role', 
     'contact 2 role', 
     'additional contact role',
     'second contact role',
     '2nd contact role',
-    'second poc role',
     'poc 2 role'
   ]);
 
@@ -253,13 +277,27 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
       contactRole: contactRoleIndex !== -1 && row[contactRoleIndex] ? String(row[contactRoleIndex]).trim() : ''
     };
     
-    // Build second contact if available
+    // Build second contact if available - prioritize email and phone from "2nd POC" columns
     const secondContact = {
       contactPerson: secondContactPersonIndex !== -1 && row[secondContactPersonIndex] ? String(row[secondContactPersonIndex]).trim() : '',
       contactEmail: secondContactEmailIndex !== -1 && row[secondContactEmailIndex] ? String(row[secondContactEmailIndex]).trim() : '',
       contactPhone: secondContactPhoneIndex !== -1 && row[secondContactPhoneIndex] ? String(row[secondContactPhoneIndex]).trim() : '',
       contactRole: secondContactRoleIndex !== -1 && row[secondContactRoleIndex] ? String(row[secondContactRoleIndex]).trim() : ''
     };
+    
+    // Log what we found for debugging
+    console.log(`📊 ${universityName} - Main contact:`, {
+      person: mainContact.contactPerson,
+      email: mainContact.contactEmail,
+      phone: mainContact.contactPhone,
+      role: mainContact.contactRole
+    });
+    console.log(`📊 ${universityName} - Second contact:`, {
+      person: secondContact.contactPerson,
+      email: secondContact.contactEmail,
+      phone: secondContact.contactPhone,
+      role: secondContact.contactRole
+    });
     
     // Build contacts array if we have multiple contacts
     const contacts: any[] = [];
@@ -270,28 +308,73 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
       contacts.push(secondContact);
     }
     
-    const contactData: ContactData = {
-      universityName,
-      zone,
-      contactPerson: mainContact.contactPerson,
-      contactEmail: mainContact.contactEmail,
-      contactPhone: mainContact.contactPhone,
-      contactRole: mainContact.contactRole,
-      contacts: contacts.length > 0 ? contacts : undefined,
-      ...additionalFields // Include all other fields from spreadsheet
-    };
+    // Check if we already have this university in the data (for merging multiple rows)
+    const existingIndex = data.findIndex(d => d.universityName.toLowerCase() === universityName.toLowerCase());
+    
+    if (existingIndex >= 0) {
+      // Merge with existing university - add new contacts if they don't already exist
+      const existing = data[existingIndex];
+      const existingContacts = existing.contacts || [];
+      
+      // Add main contact if it's not already in the list
+      if (mainContact.contactPerson || mainContact.contactEmail || mainContact.contactPhone) {
+        const mainContactExists = existingContacts.some((c: any) => 
+          (c.contactEmail && mainContact.contactEmail && c.contactEmail.toLowerCase() === mainContact.contactEmail.toLowerCase()) ||
+          (c.contactPhone && mainContact.contactPhone && c.contactPhone === mainContact.contactPhone)
+        );
+        if (!mainContactExists) {
+          existingContacts.push(mainContact);
+        }
+      }
+      
+      // Add second contact if it's not already in the list
+      if (secondContact.contactPerson || secondContact.contactEmail || secondContact.contactPhone) {
+        const secondContactExists = existingContacts.some((c: any) => 
+          (c.contactEmail && secondContact.contactEmail && c.contactEmail.toLowerCase() === secondContact.contactEmail.toLowerCase()) ||
+          (c.contactPhone && secondContact.contactPhone && c.contactPhone === secondContact.contactPhone)
+        );
+        if (!secondContactExists) {
+          existingContacts.push(secondContact);
+        }
+      }
+      
+      // Update existing entry with merged contacts
+      data[existingIndex] = {
+        ...existing,
+        contacts: existingContacts.length > 0 ? existingContacts : undefined,
+        // Update main contact fields if they're empty
+        contactPerson: existing.contactPerson || mainContact.contactPerson,
+        contactEmail: existing.contactEmail || mainContact.contactEmail,
+        contactPhone: existing.contactPhone || mainContact.contactPhone,
+        contactRole: existing.contactRole || mainContact.contactRole
+      };
+      
+      console.log(`📊 Merged ${universityName}: Now has ${existingContacts.length} contacts`);
+    } else {
+      // New university entry
+      const contactData: ContactData = {
+        universityName,
+        zone,
+        contactPerson: mainContact.contactPerson,
+        contactEmail: mainContact.contactEmail,
+        contactPhone: mainContact.contactPhone,
+        contactRole: mainContact.contactRole,
+        contacts: contacts.length > 0 ? contacts : undefined,
+        ...additionalFields // Include all other fields from spreadsheet
+      };
 
-    console.log(`📊 Parsed ${universityName}:`, {
-      contactPerson: contactData.contactPerson,
-      contactEmail: contactData.contactEmail,
-      contactPhone: contactData.contactPhone,
-      contactRole: contactData.contactRole,
-      contactsCount: contacts.length,
-      secondContact: secondContact.contactPerson || secondContact.contactEmail || secondContact.contactPhone ? 'Found' : 'Not found'
-    });
+      console.log(`📊 Parsed ${universityName}:`, {
+        contactPerson: contactData.contactPerson,
+        contactEmail: contactData.contactEmail,
+        contactPhone: contactData.contactPhone,
+        contactRole: contactData.contactRole,
+        contactsCount: contacts.length,
+        secondContact: secondContact.contactPerson || secondContact.contactEmail || secondContact.contactPhone ? 'Found' : 'Not found'
+      });
 
-    if (contactData.universityName) {
-      data.push(contactData);
+      if (contactData.universityName) {
+        data.push(contactData);
+      }
     }
   }
 

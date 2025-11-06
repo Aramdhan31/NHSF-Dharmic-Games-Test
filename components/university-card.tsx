@@ -131,6 +131,11 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
                 <Badge variant="secondary" className="text-xs">
                   {getZoneName(university.zone)}
                 </Badge>
+                {(university as any).isSchool && (
+                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600 border-purple-300">
+                    School
+                  </Badge>
+                )}
                 {university.tournamentDate && (
                   <Badge variant="outline" className="text-xs">
                     <Calendar className="w-3 h-3 mr-1" />

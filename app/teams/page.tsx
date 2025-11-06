@@ -108,6 +108,12 @@ export const universities = [
     members: 0, wins: 0, losses: 0, points: 0, 
     description: "KCL Hindu Society - Women's Kabaddi team competing in North & Central Zone (KCL is a London university, but their women's kabaddi team is competing in NZ+CZ due to insufficient teams in LZ+SZ).",
     tournamentDate: "Nov 22, 2025", isCompeting: true, isSpecialCase: true, originalZone: "LZ+SZ" },
+  // Schools competing in NZ+CZ
+  { id: "trafford-school", name: "Trafford", zone: "NZ+CZ", sports: ["Badminton", "Football", "Kho Kho", "Netball"],
+    teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Kho Kho": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Netball": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, 
+    description: "Trafford School - Competing in North & Central Zone",
+    tournamentDate: "Nov 22, 2025", isCompeting: true, isSchool: true },
 
   // ===== LONDON & SOUTH ZONE (LZ+SZ) - Nov 23, 2025 =====
   // Competing universities only - Sports from tournament table
@@ -361,7 +367,12 @@ function TeamsPageContent() {
 
   // Count universities that are actually competing (based on isCompeting field or status)
   const competingUniversitiesList = filteredUniversities.filter(uni => 
-    uni.isCompeting === true || uni.status === "competing"
+    (uni.isCompeting === true || uni.status === "competing") && !(uni as any).isSchool
+  )
+  
+  // Separate schools from universities
+  const competingSchoolsList = filteredUniversities.filter(uni => 
+    (uni.isCompeting === true || uni.status === "competing") && (uni as any).isSchool === true
   )
   
   const totalCompetingUniversities = competingUniversitiesList.length
@@ -895,6 +906,33 @@ function TeamsPageContent() {
                   </div>
                 )}
               </div>
+
+              {/* Competing Schools Section - Only show for NZ+CZ */}
+              {selectedTournament === "NZ+CZ" && competingSchoolsList.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                      <Trophy className="w-6 h-6 text-purple-600 mr-2" />
+                      Competing Schools ({competingSchoolsList.length})
+                    </h2>
+                    <Badge className="bg-purple-100 text-purple-800 border-purple-300">
+                      Schools
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
+                    {competingSchoolsList
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((school) => (
+                        <UniversityCard
+                          key={school.id}
+                          university={school}
+                          onViewDetails={handleViewDetails}
+                          showAdminControls={false}
+                        />
+                      ))}
+                  </div>
+                </div>
+              )}
 
               {/* Non-Competing Universities Section - Hidden for LZ+SZ */}
               {selectedTournament !== "LZ+SZ" && (

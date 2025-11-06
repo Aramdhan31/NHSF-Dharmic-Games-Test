@@ -266,15 +266,71 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
       const staticCompetingUnis = staticUniversities.filter(uni => uni.isCompeting === true);
       console.log('📊 Found competing universities in static code:', staticCompetingUnis.length);
       
-      // Merge static universities with Firebase data (avoid duplicates by name)
-      const existingNames = new Set(universitiesList.map(uni => (uni.name || uni.universityName || '').toLowerCase()));
+      // Merge static universities with Firebase data
+      // For KCL, allow multiple entries (one per zone) - they'll be merged later in the display logic
+      // For other universities, avoid duplicates by name+zone
+      const existingKeys = new Set(universitiesList.map(uni => {
+        const name = (uni.name || uni.universityName || '').toLowerCase();
+        const zone = uni.zone || '';
+        return `${name}::${zone}`;
+      }));
       
       staticCompetingUnis.forEach(staticUni => {
         const nameLower = staticUni.name.toLowerCase();
-        if (!existingNames.has(nameLower)) {
+        const zone = staticUni.zone || '';
+        const key = `${nameLower}::${zone}`;
+        
+        // Special handling for KCL: allow multiple entries (one per zone)
+        const isKCL = nameLower === 'kcl';
+        
+        // For KCL, always check if entry exists for this zone
+        if (isKCL) {
+          const existingKCL = universitiesList.find(uni => {
+            const uniName = (uni.name || uni.universityName || '').toLowerCase();
+            const uniZone = uni.zone || '';
+            return uniName === 'kcl' && uniZone === zone;
+          });
+          
+          if (existingKCL) {
+            // Update existing KCL entry for this zone
+            const existingIndex = universitiesList.findIndex(uni => uni === existingKCL);
+            universitiesList[existingIndex] = {
+              ...existingKCL,
+              id: staticUni.id || existingKCL.id,
+              sports: staticUni.sports || existingKCL.sports || [],
+              teamInfo: staticUni.teamInfo || existingKCL.teamInfo || {},
+              isCompeting: true,
+              status: 'competing'
+            };
+            return;
+          } else {
+            // Add new KCL entry for this zone
+            universitiesList.push({
+              id: staticUni.id || `static-${staticUni.name.toLowerCase().replace(/\s+/g, '-')}-${zone}`,
+              name: staticUni.name,
+              zone: staticUni.zone,
+              sports: staticUni.sports || [],
+              teamInfo: staticUni.teamInfo || {},
+              members: staticUni.members || 0,
+              wins: staticUni.wins || 0,
+              losses: staticUni.losses || 0,
+              points: staticUni.points || 0,
+              description: staticUni.description || `${staticUni.name} Hindu Society`,
+              tournamentDate: staticUni.tournamentDate,
+              isCompeting: true,
+              status: 'competing',
+              isStatic: true
+            });
+            existingKeys.add(key);
+            return;
+          }
+        }
+        
+        // For non-KCL universities, check by name+zone
+        if (!existingKeys.has(key)) {
           // Add static university to the list
           universitiesList.push({
-            id: staticUni.id || `static-${staticUni.name.toLowerCase().replace(/\s+/g, '-')}`,
+            id: staticUni.id || `static-${staticUni.name.toLowerCase().replace(/\s+/g, '-')}-${zone}`,
             name: staticUni.name,
             zone: staticUni.zone,
             sports: staticUni.sports || [],
@@ -289,12 +345,14 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
             status: 'competing',
             isStatic: true // Flag to indicate this is from static code
           });
-          existingNames.add(nameLower);
+          existingKeys.add(key);
         } else {
           // Update existing university with static data if it's missing isCompeting flag
-          const existingIndex = universitiesList.findIndex(uni => 
-            (uni.name || uni.universityName || '').toLowerCase() === nameLower
-          );
+          const existingIndex = universitiesList.findIndex(uni => {
+            const uniName = (uni.name || uni.universityName || '').toLowerCase();
+            const uniZone = uni.zone || '';
+            return uniName === nameLower && uniZone === zone;
+          });
           if (existingIndex >= 0) {
             const existing = universitiesList[existingIndex];
             // Ensure isCompeting is set if static says it should be competing
@@ -332,6 +390,12 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
           const name = (uni.name || uni.universityName || '').toLowerCase();
           return name === 'kcl' && (uni.isCompeting === true || uni.status === 'competing');
         });
+        
+        console.log(`📊 Found ${kclEntries.length} KCL entries:`, kclEntries.map(uni => ({
+          id: uni.id,
+          zone: uni.zone,
+          sports: uni.sports
+        })));
         
         const otherUniversities = universitiesList.filter(uni => {
           const name = (uni.name || uni.universityName || '').toLowerCase();

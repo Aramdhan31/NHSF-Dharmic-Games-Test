@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Users, Trophy, Target, Zap, Calendar, Filter, MapPin, Plus, Loader2 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createUserWithEmailAndPassword } from "firebase/auth"
 import { ref, set } from "firebase/database"
@@ -218,7 +218,8 @@ export const universities = [
     members: 0, wins: 0, losses: 0, points: 0, description: "Southampton Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
 ]
 
-export default function TeamsPage() {
+// Component that uses useSearchParams - must be wrapped in Suspense
+function TeamsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedTournament, setSelectedTournament] = useState<"all" | "NZ+CZ" | "LZ+SZ">("all")
@@ -1001,5 +1002,21 @@ export default function TeamsPage() {
       </main>
       <Footer />
     </div>
+  )
+}
+
+// Default export with Suspense boundary
+export default function TeamsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-600" />
+          <p className="text-gray-600">Loading teams page...</p>
+        </div>
+      </div>
+    }>
+      <TeamsPageContent />
+    </Suspense>
   )
 }

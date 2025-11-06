@@ -83,7 +83,8 @@ import {
   Wifi,
   WifiOff,
   Menu,
-  DollarSign
+  DollarSign,
+  User
 } from "lucide-react"
 
 export default function AdminDashboardPage() {
@@ -1540,22 +1541,26 @@ export default function AdminDashboardPage() {
                               );
                             }
                             
-                            return contactsList.map((contact: any, index: number) => (
-                              <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
-                                {contactsList.length > 1 && (
-                                  <div className="text-xs font-medium text-gray-700 mb-2">
-                                    Contact {index + 1} of {contactsList.length}
-                                  </div>
-                                )}
-                                {contact.contactPerson && (
-                                  <div className="flex items-center gap-2 text-sm">
-                                    <User className="h-4 w-4 text-gray-400" />
-                                    <span className="font-medium">{contact.contactPerson}</span>
-                                    {contact.contactRole && (
-                                      <span className="text-gray-500">({contact.contactRole})</span>
-                                    )}
-                                  </div>
-                                )}
+                            return contactsList.map((contact: any, index: number) => {
+                              const isSecondPOC = contact.contactRole === '2nd POC' || contact.contactRole === '2nd Point of Contact';
+                              const isMainContact = !isSecondPOC && contact.contactRole;
+                              
+                              return (
+                                <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+                                  {contactsList.length > 1 && (
+                                    <div className="text-xs font-medium text-gray-700 mb-2">
+                                      {isSecondPOC ? '2nd Point of Contact' : isMainContact ? 'Main Contact' : `Contact ${index + 1} of ${contactsList.length}`}
+                                    </div>
+                                  )}
+                                  {contact.contactPerson && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <User className="h-4 w-4 text-gray-400" />
+                                      <span className="font-medium">{contact.contactPerson}</span>
+                                      {contact.contactRole && (
+                                        <span className="text-gray-500">({contact.contactRole})</span>
+                                      )}
+                                    </div>
+                                  )}
                                 {contact.contactEmail && (
                                   <div className="flex items-center gap-2 text-sm">
                                     <Mail className="h-4 w-4 text-gray-400" />
@@ -1573,7 +1578,8 @@ export default function AdminDashboardPage() {
                                   </div>
                                 )}
                               </div>
-                            ));
+                              );
+                            });
                           })()}
                         </CardContent>
                       </Card>

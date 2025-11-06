@@ -107,11 +107,11 @@ export function Header() {
               <span>Nationals</span>
             </Link>
       <Link
-        href="/registration"
+        href="/register-member"
         className="flex items-center space-x-1 text-gray-700 hover:text-orange-600 transition-colors font-medium text-sm px-3 py-2 rounded-md hover:bg-orange-50"
       >
         <UserPlus className="w-4 h-4" />
-        <span>Registration</span>
+        <span>Individual Registration</span>
       </Link>
       <Link
         href="/university/login"
@@ -180,12 +180,12 @@ export function Header() {
                 <span>Nationals</span>
               </Link>
       <Link
-        href="/registration"
+        href="/register-member"
         className="flex items-center space-x-2 text-gray-700 hover:text-orange-600 transition-colors py-2 px-4 font-medium"
         onClick={() => setIsMenuOpen(false)}
       >
         <UserPlus className="w-5 h-5" />
-        <span>Registration</span>
+        <span>Individual Registration</span>
       </Link>
       <Link
         href="/university/login"

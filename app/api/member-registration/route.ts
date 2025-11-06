@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/firebase-server'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore'
+import { getDatabase, ref, push, set } from 'firebase/database'
+import { realtimeDb } from '@/lib/firebase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,6 +65,68 @@ export async function POST(request: NextRequest) {
       ticketType,
       universityId
     })
+
+    // If participant, also save to nested structure under university
+    if (ticketType === 'participant' && universityId && sport) {
+      try {
+        // Convert sport name to sportId (e.g., "Kho Kho" -> "kho_kho")
+        const sportId = sport.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+        const teamId = 'main_team' // Default team for now
+        
+        // Split fullName into firstName and lastName
+        const nameParts = fullName.trim().split(' ')
+        const firstName = nameParts[0] || ''
+        const lastName = nameParts.slice(1).join(' ') || ''
+        
+        // Create player data for nested structure
+        const playerData = {
+          firstName,
+          lastName,
+          email: body.email?.trim() || null,
+          phone: body.phone?.trim() || null,
+          sport,
+          position: 'Player',
+          playerId: docRef.id, // Link to member registration
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          checkedIn: false,
+          checkInDate: '',
+          checkInTime: '',
+          idChecked: false, // ID check checkbox
+          signedIn: false // Sign-in checkbox
+        }
+        
+        // Save to nested structure: universities/{uniId}/sports/{sportId}/teams/{teamId}/players/{playerId}
+        const playersRef = ref(realtimeDb, `universities/${universityId}/sports/${sportId}/teams/${teamId}/players`)
+        const newPlayerRef = push(playersRef)
+        await set(newPlayerRef, {
+          ...playerData,
+          playerId: newPlayerRef.key
+        })
+        
+        // Also mirror to global players list for admin dashboard
+        const globalPlayersRef = ref(realtimeDb, `players/${newPlayerRef.key}`)
+        await set(globalPlayersRef, {
+          ...playerData,
+          playerId: newPlayerRef.key,
+          universityId,
+          universityName: university,
+          sportId,
+          teamId,
+          path: `universities/${universityId}/sports/${sportId}/teams/${teamId}/players/${newPlayerRef.key}`
+        })
+        
+        console.log('Player saved to nested structure:', {
+          universityId,
+          sportId,
+          teamId,
+          playerId: newPlayerRef.key
+        })
+      } catch (playerError) {
+        console.error('Error saving player to nested structure:', playerError)
+        // Don't fail the registration if nested save fails
+      }
+    }
 
     // Send confirmation email
     try {

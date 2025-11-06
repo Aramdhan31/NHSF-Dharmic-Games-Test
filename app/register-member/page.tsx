@@ -1,7 +1,9 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { collection, getDocs, query, where } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +25,14 @@ import {
 } from 'lucide-react'
 
 const ticketTypes = [
+  { 
+    value: 'participant', 
+    label: 'Participant (Player)', 
+    icon: Gamepad2, 
+    description: 'For players competing in the games',
+    requiresUniversity: true,
+    color: 'bg-green-50 border-green-200 text-green-800'
+  },
   { 
     value: 'spectator', 
     label: 'Spectator Ticket', 
@@ -58,6 +68,8 @@ export default function RegisterMemberPage() {
     phone: '',
     ticketType: '',
     zone: '',
+    university: '',
+    sport: '',
     hasAllergies: false,
     allergies: '',
     hasMedicalConditions: false,
@@ -66,6 +78,38 @@ export default function RegisterMemberPage() {
     emergencyContactNumber: '',
     disclaimerAccepted: false
   })
+  
+  const [competingUniversities, setCompetingUniversities] = useState<Array<{id: string, name: string, zone: string, sports: string[]}>>([])
+
+  // Fetch competing universities
+  useEffect(() => {
+    async function fetchCompetingUniversities() {
+      try {
+        const universitiesRef = collection(db, 'universities')
+        const q = query(universitiesRef, where('status', '==', 'competing'))
+        const snapshot = await getDocs(q)
+        
+        const unis: Array<{id: string, name: string, zone: string, sports: string[]}> = []
+        snapshot.forEach((doc) => {
+          const data = doc.data()
+          unis.push({
+            id: doc.id,
+            name: data.name || '',
+            zone: data.zone || '',
+            sports: data.sports || []
+          })
+        })
+        
+        // Sort alphabetically
+        unis.sort((a, b) => a.name.localeCompare(b.name))
+        setCompetingUniversities(unis)
+      } catch (error) {
+        console.error('Error fetching competing universities:', error)
+      }
+    }
+    
+    fetchCompetingUniversities()
+  }, [])
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -94,6 +138,14 @@ export default function RegisterMemberPage() {
       if (!formData.zone) {
         throw new Error('Please select which zonal event you will attend')
       }
+      if (formData.ticketType === 'participant') {
+        if (!formData.university) {
+          throw new Error('Please select your university')
+        }
+        if (!formData.sport) {
+          throw new Error('Please select your sport')
+        }
+      }
       if (formData.hasAllergies && !formData.allergies.trim()) {
         throw new Error('Please specify your allergies')
       }
@@ -109,6 +161,13 @@ export default function RegisterMemberPage() {
         throw new Error('You must agree to the disclaimer policy')
       }
 
+      // Find university ID if participant
+      let universityId = null
+      if (formData.ticketType === 'participant' && formData.university) {
+        const selectedUni = competingUniversities.find(u => u.name === formData.university)
+        universityId = selectedUni?.id || null
+      }
+
       // Create member object
       const memberData = {
         fullName: formData.fullName.trim(),
@@ -120,13 +179,13 @@ export default function RegisterMemberPage() {
         allergies: formData.hasAllergies ? formData.allergies.trim() : null,
         hasMedicalConditions: formData.hasMedicalConditions,
         medicalConditions: formData.hasMedicalConditions ? formData.medicalConditions.trim() : null,
-        university: null,
-        sport: null,
+        university: formData.ticketType === 'participant' ? formData.university : null,
+        sport: formData.ticketType === 'participant' ? formData.sport : null,
         emergencyContactName: formData.emergencyContactName.trim(),
         emergencyContactNumber: formData.emergencyContactNumber.trim(),
         disclaimerAccepted: true,
         registrationDate: new Date().toISOString(),
-        universityId: null, // No university association for external registrations
+        universityId: universityId,
         status: 'registered'
       }
 
@@ -154,6 +213,8 @@ export default function RegisterMemberPage() {
         phone: '',
         ticketType: '',
         zone: '',
+        university: '',
+        sport: '',
         hasAllergies: false,
         allergies: '',
         hasMedicalConditions: false,
@@ -316,7 +377,14 @@ export default function RegisterMemberPage() {
                 <h3 className="text-lg font-semibold text-gray-900">Zonal Event *</h3>
                 <div className="space-y-2">
                   <Label htmlFor="zone">Which zonal event will you attend?</Label>
-                  <Select value={formData.zone} onValueChange={(value) => handleInputChange('zone', value)}>
+                  <Select value={formData.zone} onValueChange={(value) => {
+                    handleInputChange('zone', value)
+                    // Reset university and sport when zone changes
+                    if (formData.ticketType === 'participant') {
+                      handleInputChange('university', '')
+                      handleInputChange('sport', '')
+                    }
+                  }}>
                     <SelectTrigger className="h-12 focus:border-orange-500 focus:ring-orange-500/20">
                       <SelectValue placeholder="Select zonal event" />
                     </SelectTrigger>
@@ -340,6 +408,71 @@ export default function RegisterMemberPage() {
                   </p>
                 </div>
               </div>
+
+              {/* University and Sport Selection (for participants only) */}
+              {formData.ticketType === 'participant' && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Gamepad2 className="h-5 w-5 mr-2 text-green-600" />
+                    Player Information
+                  </h3>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="university">University *</Label>
+                    <Select 
+                      value={formData.university} 
+                      onValueChange={(value) => {
+                        handleInputChange('university', value)
+                        // Reset sport when university changes
+                        handleInputChange('sport', '')
+                      }}
+                    >
+                      <SelectTrigger className="h-12 focus:border-orange-500 focus:ring-orange-500/20">
+                        <SelectValue placeholder="Select your university" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {competingUniversities
+                          .filter(uni => !formData.zone || uni.zone === formData.zone)
+                          .map((uni) => (
+                            <SelectItem key={uni.id} value={uni.name}>
+                              {uni.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    {formData.zone && competingUniversities.filter(uni => uni.zone === formData.zone).length === 0 && (
+                      <p className="text-sm text-amber-600">
+                        No competing universities found for this zone. Please select a different zone.
+                      </p>
+                    )}
+                  </div>
+
+                  {formData.university && (
+                    <div className="space-y-2">
+                      <Label htmlFor="sport">Sport *</Label>
+                      <Select 
+                        value={formData.sport} 
+                        onValueChange={(value) => handleInputChange('sport', value)}
+                      >
+                        <SelectTrigger className="h-12 focus:border-orange-500 focus:ring-orange-500/20">
+                          <SelectValue placeholder="Select your sport" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {competingUniversities
+                            .find(uni => uni.name === formData.university)
+                            ?.sports
+                            .filter(sport => sport && sport !== 'TBD')
+                            .map((sport) => (
+                              <SelectItem key={sport} value={sport}>
+                                {sport}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Medical Information */}
               <div className="space-y-4">

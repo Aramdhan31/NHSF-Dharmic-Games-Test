@@ -9,11 +9,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Users, Trophy, Target, Zap, Calendar, Filter, MapPin, Plus, Loader2 } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Users, Trophy, Target, Zap, Calendar, Filter, MapPin, Plus, Loader2, User, Gamepad2 } from "lucide-react"
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createUserWithEmailAndPassword } from "firebase/auth"
-import { ref, set } from "firebase/database"
+import { ref, set, get } from "firebase/database"
 import { collection, getDocs, query, orderBy, onSnapshot } from "firebase/firestore"
 import { auth, realtimeDb, db } from "@/lib/firebase"
 import { updateUniversityStatus } from "@/utils/updateUniversity"
@@ -234,6 +235,8 @@ function TeamsPageContent() {
   const searchParams = useSearchParams()
   const [selectedTournament, setSelectedTournament] = useState<"all" | "NZ+CZ" | "LZ+SZ">("all")
   const [selectedUniversity, setSelectedUniversity] = useState<any>(null)
+  const [universityPlayers, setUniversityPlayers] = useState<{[sport: string]: any[]}>({})
+  const [loadingPlayers, setLoadingPlayers] = useState(false)
   
   // Registration form state
   const [showRegistrationForm, setShowRegistrationForm] = useState(false)
@@ -439,6 +442,72 @@ function TeamsPageContent() {
   const totalPoints = filteredUniversities.reduce((sum, uni) => sum + (uni.points || 0), 0)
 
   const handleViewDetails = (university: any) => setSelectedUniversity(university)
+
+  // Fetch players for selected university
+  useEffect(() => {
+    if (!selectedUniversity || !selectedUniversity.id) {
+      setUniversityPlayers({})
+      return
+    }
+
+    async function fetchPlayers() {
+      setLoadingPlayers(true)
+      try {
+        const uniId = selectedUniversity.id
+        const sports = selectedUniversity.sports || []
+        const playersBySport: {[sport: string]: any[]} = {}
+
+        // Fetch players for each sport
+        for (const sport of sports) {
+          if (!sport || sport === 'TBD') continue
+          
+          const sportId = sport.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+          const playersRef = ref(realtimeDb, `universities/${uniId}/sports/${sportId}/teams`)
+          
+          try {
+            const snapshot = await get(playersRef)
+            
+            if (snapshot.exists()) {
+              const teamsData = snapshot.val()
+              const allPlayers: any[] = []
+              
+              // Iterate through all teams (main_team, team_a, team_b, etc.)
+              Object.keys(teamsData).forEach(teamId => {
+                const teamPlayers = teamsData[teamId]?.players || {}
+                Object.keys(teamPlayers).forEach(playerId => {
+                  const player = teamPlayers[playerId]
+                  if (player) {
+                    allPlayers.push({
+                      id: playerId,
+                      name: `${player.firstName || ''} ${player.lastName || ''}`.trim() || player.name || 'Unknown',
+                      sport: sport,
+                      team: teamId === 'main_team' ? 'Main Team' : teamId === 'team_a' ? 'Team A' : teamId === 'team_b' ? 'Team B' : teamId,
+                      ...player
+                    })
+                  }
+                })
+              })
+              
+              if (allPlayers.length > 0) {
+                playersBySport[sport] = allPlayers
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching players for ${sport}:`, error)
+          }
+        }
+        
+        setUniversityPlayers(playersBySport)
+      } catch (error) {
+        console.error('Error fetching players:', error)
+        setUniversityPlayers({})
+      } finally {
+        setLoadingPlayers(false)
+      }
+    }
+
+    fetchPlayers()
+  }, [selectedUniversity])
 
   // University registration function
   async function handleUniversitySignup(event: React.FormEvent) {
@@ -1054,6 +1123,108 @@ function TeamsPageContent() {
           </div>
         </div>
       </main>
+      
+      {/* University Details Dialog */}
+      <Dialog open={!!selectedUniversity} onOpenChange={(open) => !open && setSelectedUniversity(null)}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Trophy className="w-5 h-5 text-orange-600" />
+              <span>{selectedUniversity?.name || 'University Details'}</span>
+            </DialogTitle>
+            <DialogDescription>
+              View players and contact information for this university
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedUniversity && (
+            <div className="space-y-6">
+              {/* Contact Information */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center">
+                  <User className="w-5 h-5 mr-2 text-blue-600" />
+                  Main Contact
+                </h3>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  {selectedUniversity.contacts && selectedUniversity.contacts.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedUniversity.contacts
+                        .filter((contact: any) => contact.contactRole?.toLowerCase().includes('main') || !contact.contactRole?.toLowerCase().includes('2nd'))
+                        .map((contact: any, index: number) => (
+                          <div key={index}>
+                            <div className="font-medium text-blue-900">{contact.contactPerson || 'N/A'}</div>
+                            {contact.contactRole && (
+                              <div className="text-sm text-blue-700">{contact.contactRole}</div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  ) : selectedUniversity.contactPerson ? (
+                    <div>
+                      <div className="font-medium text-blue-900">{selectedUniversity.contactPerson}</div>
+                      {selectedUniversity.contactRole && (
+                        <div className="text-sm text-blue-700">{selectedUniversity.contactRole}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-gray-500">No contact information available</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Players by Sport */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center">
+                  <Gamepad2 className="w-5 h-5 mr-2 text-green-600" />
+                  Players
+                </h3>
+                
+                {loadingPlayers ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-orange-600 mr-2" />
+                    <span className="text-gray-600">Loading players...</span>
+                  </div>
+                ) : Object.keys(universityPlayers).length === 0 ? (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500">
+                    No players registered yet
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {selectedUniversity.sports
+                      ?.filter((sport: string) => sport && sport !== 'TBD')
+                      .map((sport: string) => {
+                        const players = universityPlayers[sport] || []
+                        return (
+                          <div key={sport} className="border border-gray-200 rounded-lg p-4">
+                            <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                              <Badge variant="outline" className="mr-2">{sport}</Badge>
+                              <span className="text-sm text-gray-600">
+                                ({players.length} {players.length === 1 ? 'player' : 'players'})
+                              </span>
+                            </h4>
+                            {players.length === 0 ? (
+                              <div className="text-sm text-gray-500 italic">No players registered for this sport</div>
+                            ) : (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                {players.map((player: any) => (
+                                  <div key={player.id} className="bg-gray-50 rounded p-2 text-sm">
+                                    <div className="font-medium text-gray-900">{player.name}</div>
+                                    <div className="text-xs text-gray-600">{player.team}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   )

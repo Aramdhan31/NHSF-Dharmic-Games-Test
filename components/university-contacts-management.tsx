@@ -127,14 +127,14 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
         }
       });
       
-      // Filter to only competing universities
-      const competingOnly = universitiesData.filter(uni => 
-        uni.isCompeting === true || uni.status === 'competing'
-      );
+      // Filter to only competing universities and sort alphabetically
+      const competingOnly = universitiesData
+        .filter(uni => uni.isCompeting === true || uni.status === 'competing')
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       
       setUniversities(competingOnly);
       setLoading(false);
-      console.log('📊 Updated competing universities (real-time):', competingOnly.length);
+      console.log('📊 Updated competing universities (real-time, sorted alphabetically):', competingOnly.length);
       console.log('📊 Sample university with contacts:', competingOnly.find(u => u.contactPerson || u.contactEmail));
     }, (error) => {
       console.error('❌ Error in universities listener:', error);
@@ -200,13 +200,13 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
         }
       });
 
-      // Filter to only competing universities
-      const competingOnly = universitiesData.filter(uni => 
-        uni.isCompeting === true || uni.status === 'competing'
-      );
+      // Filter to only competing universities and sort alphabetically
+      const competingOnly = universitiesData
+        .filter(uni => uni.isCompeting === true || uni.status === 'competing')
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
       setUniversities(competingOnly);
-      console.log('📊 Loaded competing universities:', competingOnly.length);
+      console.log('📊 Loaded competing universities (sorted alphabetically):', competingOnly.length);
       console.log('📊 Universities with contact details:', competingOnly.filter(u => u.contactPerson || u.contactEmail).length);
       console.log('📊 Sample university:', competingOnly.find(u => u.contactPerson || u.contactEmail));
     } catch (error: any) {
@@ -317,8 +317,10 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
     return isCompeting && matchesSearch && matchesZone;
   });
 
-  // All filtered universities are competing (no need to group)
-  const competingUniversities = filteredUniversities;
+  // All filtered universities are competing - sort alphabetically by name
+  const competingUniversities = filteredUniversities.sort((a, b) => 
+    (a.name || '').localeCompare(b.name || '')
+  );
   const nonCompetingUniversities: UniversityContact[] = []; // Empty - only show competing
 
   if (loading) {
@@ -476,21 +478,26 @@ function UniversityContactCard({
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center space-x-3 mb-3">
-              <h3 className="text-lg font-semibold">{university.name}</h3>
-              <Badge variant={university.isCompeting ? 'default' : 'secondary'}>
-                {university.zone}
-              </Badge>
-              {university.isCompeting && (
-                <Badge className="bg-green-500">Competing</Badge>
-              )}
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center space-x-3">
+                <h3 className="text-lg font-semibold">{university.name}</h3>
+                <Badge variant={university.isCompeting ? 'default' : 'secondary'}>
+                  {university.zone}
+                </Badge>
+                {university.isCompeting && (
+                  <Badge className="bg-green-500">Competing</Badge>
+                )}
+              </div>
               {university.sports && university.sports.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {university.sports.map((sport, idx) => (
-                    <Badge key={idx} variant="outline" className="text-xs">
-                      {sport}
-                    </Badge>
-                  ))}
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-gray-600">Sports:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {university.sports.map((sport, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {sport}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

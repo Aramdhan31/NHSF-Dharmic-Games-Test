@@ -2420,7 +2420,7 @@ export default function AdminDashboardPage() {
                     <SelectValue placeholder="Select university" />
                   </SelectTrigger>
                   <SelectContent>
-                    {universities.map((uni, index) => (
+                    {[...universities].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map((uni, index) => (
                       <SelectItem key={uni.id || `uni-${index}`} value={uni.name}>{uni.name}</SelectItem>
                     ))}
                   </SelectContent>

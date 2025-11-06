@@ -156,6 +156,20 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
       <CardContent className="space-y-4">
         <p className="text-sm sm:text-base text-gray-600">{university.description}</p>
 
+        {/* Special Case Note for KCL Women's Kabaddi */}
+        {(university as any).isSpecialCase && (university as any).originalZone && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <span className="text-yellow-600 font-semibold text-sm">ℹ️ Note:</span>
+              <p className="text-sm text-yellow-800">
+                {university.name} is a {(university as any).originalZone === "LZ+SZ" ? "London & South Zone" : "North & Central Zone"} university, 
+                but {university.sports && university.sports.length > 0 ? `their ${university.sports[0]}` : "this team"} is competing in {getZoneName(university.zone)} 
+                due to insufficient teams in their original zone.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Competing Status with Live Editing */}
         <div className="mb-4">
           {university.status === "competing" || university.isCompeting === true ? (

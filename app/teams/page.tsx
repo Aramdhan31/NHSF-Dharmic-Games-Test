@@ -46,6 +46,11 @@ export const sportsConfig = {
     price: 33,
     maxCapacity: 4,
     name: "Kabaddi (men's)"
+  },
+  "Kabaddi (women's)": {
+    price: 33,
+    maxCapacity: 4,
+    name: "Kabaddi (women's)"
   }
 }
 
@@ -54,30 +59,55 @@ export const sportsConfig = {
 // ======================
 export const universities = [
   // ===== NORTH & CENTRAL ZONE (NZ+CZ) - Nov 22, 2025 =====
-  // Venue information and sport selections pending - forms not yet sent to chapters
-  // University list confirmed but competing sports TBD
-  
-  { id: "40", name: "Aston", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Aston Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "48", name: "Birmingham", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "University of Birmingham Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "41", name: "Cambridge", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Cambridge Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "42", name: "Coventry", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Coventry Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "43", name: "DMU", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "DMU Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "33", name: "Dundee", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Dundee Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "49", name: "East Anglia", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "UEA Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "34", name: "Edinburgh", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Edinburgh Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "35", name: "Keele", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Keele Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "36", name: "Lancaster", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Lancaster Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "2", name: "Leeds", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Leeds University Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "44", name: "Leicester", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Leicester Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "45", name: "Loughborough", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Loughborough Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "3", name: "Manchester", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Manchester Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "46", name: "Northampton", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Northampton Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "4", name: "Nottingham", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Nottingham Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "47", name: "Nottingham Trent", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Nottingham Trent Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "37", name: "Sheffield", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Sheffield Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "38", name: "UCLAN", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "UCLAN Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "50", name: "Warwick", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "Warwick Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
-  { id: "39", name: "York", zone: "NZ+CZ", sports: ["TBD"], members: 0, wins: 0, losses: 0, points: 0, description: "York Hindu Society - Sport selection pending form submission.", tournamentDate: "Nov 22, 2025", isCompeting: false },
+  // Competing universities with sports information
+  { id: "45", name: "Loughborough", zone: "NZ+CZ", sports: ["Netball", "Football", "Badminton", "Kho Kho"],
+    teamInfo: { "Netball": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Kho Kho": { teamA: { isOpen: true }, teamB: { isOpen: true } } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Loughborough Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "50", name: "Warwick", zone: "NZ+CZ", sports: ["Netball", "Football", "Badminton", "Kho Kho", "Kabaddi (men's)"],
+    teamInfo: { "Netball": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Kho Kho": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Warwick Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "37", name: "Sheffield", zone: "NZ+CZ", sports: ["Netball", "Football", "Badminton", "Kho Kho"],
+    teamInfo: { "Netball": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Kho Kho": { teamA: { isOpen: true }, teamB: { isOpen: true } } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Sheffield Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "39", name: "York", zone: "NZ+CZ", sports: ["Football", "Badminton", "Kho Kho", "Kabaddi (men's)", "Kabaddi (women's)"],
+    teamInfo: { "Football": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (women's)": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "York Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "3", name: "Manchester", zone: "NZ+CZ", sports: ["Netball", "Football", "Badminton", "Kho Kho", "Kabaddi (men's)", "Kabaddi (women's)"],
+    teamInfo: { "Netball": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Kho Kho": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Kabaddi (women's)": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Manchester Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "44", name: "Leicester", zone: "NZ+CZ", sports: ["Netball", "Football", "Badminton", "Kho Kho"],
+    teamInfo: { "Netball": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Kho Kho": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Leicester Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "48", name: "Birmingham", zone: "NZ+CZ", sports: ["Netball", "Football", "Badminton", "Kho Kho", "Kabaddi (men's)"],
+    teamInfo: { "Netball": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "University of Birmingham Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "4", name: "Nottingham", zone: "NZ+CZ", sports: ["Netball", "Football", "Badminton", "Kho Kho"],
+    teamInfo: { "Netball": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Kho Kho": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Nottingham Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "47", name: "Nottingham Trent", zone: "NZ+CZ", sports: ["Football", "Badminton"],
+    teamInfo: { "Football": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: true } } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Nottingham Trent Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "42", name: "Coventry", zone: "NZ+CZ", sports: ["Football"],
+    teamInfo: { "Football": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Coventry Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "35", name: "Keele", zone: "NZ+CZ", sports: ["Badminton", "Kho Kho"],
+    teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Kho Kho": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Keele Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "2", name: "Leeds", zone: "NZ+CZ", sports: ["Netball", "Football", "Badminton", "Kho Kho"],
+    teamInfo: { "Netball": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Kho Kho": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Leeds University Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "41", name: "Cambridge", zone: "NZ+CZ", sports: ["Football", "Badminton", "Kho Kho", "Kabaddi (men's)", "Kabaddi (women's)"],
+    teamInfo: { "Football": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Kabaddi (women's)": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "Cambridge Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  { id: "43", name: "DMU", zone: "NZ+CZ", sports: ["Football", "Badminton"],
+    teamInfo: { "Football": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: true } } },
+    members: 0, wins: 0, losses: 0, points: 0, description: "DMU Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
+  // Special case: KCL Woman's Kabaddi - KCL is in LZ+SZ but their women's kabaddi team is competing in NZ+CZ
+  { id: "18-kabaddi-womens", name: "KCL", zone: "NZ+CZ", sports: ["Kabaddi (women's)"],
+    teamInfo: { "Kabaddi (women's)": { teamA: { isOpen: true }, teamB: null } },
+    members: 0, wins: 0, losses: 0, points: 0, 
+    description: "KCL Hindu Society - Women's Kabaddi team competing in North & Central Zone (KCL is a London university, but their women's kabaddi team is competing in NZ+CZ due to insufficient teams in LZ+SZ).",
+    tournamentDate: "Nov 22, 2025", isCompeting: true, isSpecialCase: true, originalZone: "LZ+SZ" },
 
   // ===== LONDON & SOUTH ZONE (LZ+SZ) - Nov 23, 2025 =====
   // Competing universities only - Sports from tournament table

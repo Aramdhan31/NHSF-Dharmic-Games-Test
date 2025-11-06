@@ -182,7 +182,9 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2 text-green-700">
                   <Trophy className="w-4 h-4" />
-                  <span className="font-medium text-sm">Competing</span>
+                  <span className="font-medium text-sm">
+                    {(university as any).isSchool ? "Competing School" : "Competing"}
+                  </span>
                 </div>
                 {showAdminControls && (
                   <Button
@@ -204,7 +206,9 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
                 )}
               </div>
               <p className="text-green-600 text-xs mt-1">
-                This university is actively participating in the tournament
+                {(university as any).isSchool 
+                  ? "This Schools team is actively participating in the tournament"
+                  : "This university is actively participating in the tournament"}
               </p>
             </div>
           ) : (

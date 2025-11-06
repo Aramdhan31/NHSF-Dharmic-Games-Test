@@ -291,11 +291,19 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
             <div className="space-y-3">
               {/* Display sports as badges */}
               <div className="flex flex-wrap gap-2">
-                {university.sports.map((sport, index) => (
-                  <Badge key={index} variant="outline" className="text-xs">
-                    {sport}
-                  </Badge>
-                ))}
+                {university.sports.map((sport, index) => {
+                  // Check if university has both Team A and Team B for this sport
+                  const teamInfo = (university as any).teamInfo?.[sport];
+                  const hasTeamA = teamInfo?.teamA?.isOpen !== false;
+                  const hasTeamB = teamInfo?.teamB?.isOpen === true;
+                  const hasBothTeams = hasTeamA && hasTeamB;
+                  
+                  return (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {sport}{hasBothTeams ? ' (A+B team)' : ''}
+                    </Badge>
+                  );
+                })}
               </div>
               
               {/* Display players for each sport if available */}

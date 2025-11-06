@@ -19,6 +19,37 @@ import { auth, realtimeDb, db } from "@/lib/firebase"
 import { updateUniversityStatus } from "@/utils/updateUniversity"
 
 // ======================
+// SPORTS CONFIGURATION
+// ======================
+export const sportsConfig = {
+  "Kho Kho": {
+    price: 33,
+    maxCapacity: 10,
+    name: "Kho Kho"
+  },
+  "Badminton": {
+    price: 18,
+    maxCapacity: 18,
+    name: "Badminton"
+  },
+  "Football": {
+    price: 33,
+    maxCapacity: 16,
+    name: "Football"
+  },
+  "Netball": {
+    price: 33,
+    maxCapacity: 8,
+    name: "Netball"
+  },
+  "Kabaddi (men's)": {
+    price: 33,
+    maxCapacity: 4,
+    name: "Kabaddi (men's)"
+  }
+}
+
+// ======================
 // UNIVERSITIES DATA
 // ======================
 export const universities = [
@@ -235,7 +266,7 @@ export default function TeamsPage() {
         const staticUni = universities.find(u => u.name === universityName)
         
         return {
-          id: doc.id,
+        id: doc.id,
           ...firebaseData,
           zone: firebaseData.zone || "Unknown",
           // Use sports from Firebase if available, otherwise use static data
@@ -254,7 +285,7 @@ export default function TeamsPage() {
           description: firebaseData.description || staticUni?.description || `${universityName} Hindu Society`,
           tournamentDate: firebaseData.date === "2025-11-22" ? "Nov 22, 2025" : (staticUni?.tournamentDate || "Nov 23, 2025"),
           isCompeting: firebaseData.status === "competing" || firebaseData.isCompeting === true || staticUni?.isCompeting === true,
-          isRegistered: true
+        isRegistered: true
         }
       })
       
@@ -728,6 +759,60 @@ export default function TeamsPage() {
             
           </div>
 
+          {/* Sports Capacity & Pricing - Only show for LZ+SZ */}
+          {selectedTournament === "LZ+SZ" || selectedTournament === "all" ? (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  Sports Capacity & Pricing
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(sportsConfig).map(([sportName, config]) => {
+                    // Count confirmed teams for this sport
+                    const confirmedTeams = competingUniversitiesList.reduce((count, uni) => {
+                      if (!uni.sports || !uni.sports.includes(sportName)) return count;
+                      const teamInfo = uni.teamInfo?.[sportName];
+                      let teamCount = 0;
+                      if (teamInfo?.teamA?.isOpen !== false) teamCount++;
+                      if (teamInfo?.teamB?.isOpen === true) teamCount++;
+                      return count + teamCount;
+                    }, 0);
+                    
+                    const isFull = confirmedTeams >= config.maxCapacity;
+                    
+                    return (
+                      <div key={sportName} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-gray-900">{sportName}</h3>
+                          <Badge variant={isFull ? "destructive" : "default"}>
+                            {isFull ? "Full" : `${confirmedTeams}/${config.maxCapacity}`}
+                          </Badge>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Price:</span>
+                            <span className="font-semibold text-gray-900">£{config.price}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Capacity:</span>
+                            <span className="text-gray-700">{config.maxCapacity} teams</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Confirmed:</span>
+                            <span className="text-gray-700">{confirmedTeams} teams</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+
           {/* Universities Grid */}
           {loadingUniversities ? (
             <div className="text-center py-12">
@@ -771,38 +856,38 @@ export default function TeamsPage() {
 
               {/* Non-Competing Universities Section - Hidden for LZ+SZ */}
               {selectedTournament !== "LZ+SZ" && (
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                      <Users className="w-6 h-6 text-gray-600 mr-2" />
-                      Affiliated Universities ({filteredUniversities.length - competingUniversitiesList.length})
-                    </h2>
-                    <Badge className="bg-gray-100 text-gray-800 border-gray-300">
-                      Affiliated
-                    </Badge>
-                  </div>
-                  {(filteredUniversities.length - competingUniversitiesList.length) > 0 ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
-                      {filteredUniversities
-                        .filter(uni => !competingUniversitiesList.includes(uni))
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map((university) => (
-                          <UniversityCard
-                            key={university.id}
-                            university={university}
-                            onViewDetails={handleViewDetails}
-                            showAdminControls={false}
-                          />
-                        ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 bg-gray-50 rounded-lg">
-                      <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">All registered universities are competing</p>
-                      <p className="text-sm text-gray-500 mt-2">Great participation!</p>
-                    </div>
-                  )}
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                    <Users className="w-6 h-6 text-gray-600 mr-2" />
+                    Affiliated Universities ({filteredUniversities.length - competingUniversitiesList.length})
+                  </h2>
+                  <Badge className="bg-gray-100 text-gray-800 border-gray-300">
+                    Affiliated
+                  </Badge>
                 </div>
+                {(filteredUniversities.length - competingUniversitiesList.length) > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
+                    {filteredUniversities
+                      .filter(uni => !competingUniversitiesList.includes(uni))
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((university) => (
+                        <UniversityCard
+                          key={university.id}
+                          university={university}
+                          onViewDetails={handleViewDetails}
+                          showAdminControls={false}
+                        />
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg">
+                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">All registered universities are competing</p>
+                    <p className="text-sm text-gray-500 mt-2">Great participation!</p>
+                  </div>
+                )}
+              </div>
               )}
             </div>
           )}

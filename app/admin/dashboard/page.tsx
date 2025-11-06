@@ -13,6 +13,7 @@ import { LiveScoreAdmin } from "@/components/live-score-admin"
 import { DynamicUpdateStatus } from "@/components/dynamic-update-status"
 import { NightModeScreensaver } from "@/components/night-mode-screensaver"
 import { UniversityContactsManagement } from "@/components/university-contacts-management"
+import { WaitingListManagement } from "@/components/waiting-list-management"
 import { universities as staticUniversities } from "@/app/teams/page"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -1373,10 +1374,11 @@ export default function AdminDashboardPage() {
             {/* Main Content Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
               <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                <TabsList className={`inline-flex w-full min-w-max ${adminCheck?.isSuperAdmin ? 'lg:grid lg:grid-cols-9' : 'lg:grid lg:grid-cols-7'} text-xs sm:text-sm`}>
+                <TabsList className={`inline-flex w-full min-w-max ${adminCheck?.isSuperAdmin ? 'lg:grid lg:grid-cols-10' : 'lg:grid lg:grid-cols-8'} text-xs sm:text-sm`}>
                   <TabsTrigger value="overview" className="whitespace-nowrap">Overview</TabsTrigger>
                   <TabsTrigger value="universities" className="whitespace-nowrap">Universities</TabsTrigger>
                   <TabsTrigger value="university-contacts" className="whitespace-nowrap">Contacts</TabsTrigger>
+                  <TabsTrigger value="waiting-list" className="whitespace-nowrap">Waiting List</TabsTrigger>
                   <TabsTrigger value="players" className="whitespace-nowrap">Players</TabsTrigger>
                   <TabsTrigger value="matches" className="whitespace-nowrap">Matches</TabsTrigger>
                   <TabsTrigger value="scoring" className="whitespace-nowrap">Scoring</TabsTrigger>
@@ -2117,6 +2119,11 @@ export default function AdminDashboardPage() {
                     setActiveTab("universities");
                   }}
                 />
+              </TabsContent>
+
+              {/* Waiting List Tab */}
+              <TabsContent value="waiting-list" className="space-y-6">
+                <WaitingListManagement adminCheck={adminCheck} />
               </TabsContent>
 
               {/* Players Tab */}

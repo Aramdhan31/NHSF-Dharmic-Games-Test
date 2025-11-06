@@ -39,7 +39,7 @@ import {
   CheckSquare,
   DollarSign
 } from 'lucide-react';
-import { collection, getDocs, doc, updateDoc, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, updateDoc, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { ref, update } from 'firebase/database';
 import { db, realtimeDb } from '@/lib/firebase';
 import { useFirebase } from '@/lib/firebase-context';
@@ -61,6 +61,16 @@ interface ContactInfo {
   contactRole?: string;
 }
 
+interface TeamPayment {
+  confirmed?: boolean;
+  total?: number;
+  paymentLinkSent?: boolean;
+  paid?: boolean;
+  contactPerson?: string; // Which contact manages this team
+  contactEmail?: string;
+  contactPhone?: string;
+}
+
 interface UniversityContact {
   id: string;
   name: string;
@@ -68,13 +78,16 @@ interface UniversityContact {
   isCompeting?: boolean;
   status?: string;
   sports?: string[];
+  teamInfo?: any; // Team A/B information
   contactPerson?: string; // Legacy single contact (for backward compatibility)
   contactEmail?: string;
   contactPhone?: string;
   contactRole?: string;
   contacts?: ContactInfo[]; // Array of multiple contacts
   contactDetails?: any;
-  // Payment and confirmation fields
+  // Payment and confirmation fields - per team
+  teamPayments?: { [sport: string]: TeamPayment };
+  // Legacy university-level fields (for backward compatibility)
   confirmed?: boolean;
   total?: number;
   paymentLinkSent?: boolean;
@@ -446,6 +459,95 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
     return JSON.stringify(editingData) !== JSON.stringify(originalData);
   };
 
+  const handleTeamCheckboxChange = async (universityId: string, sport: string, field: 'confirmed' | 'paymentLinkSent' | 'paid', value: boolean) => {
+    if (!isAdmin) return;
+    
+    try {
+      const universityRef = doc(db, 'universities', universityId);
+      const universityDoc = await getDoc(universityRef);
+      const currentData = universityDoc.data() || {};
+      const currentTeamPayments = currentData.teamPayments || {};
+      
+      const updateData = {
+        teamPayments: {
+          ...currentTeamPayments,
+          [sport]: {
+            ...currentTeamPayments[sport],
+            [field]: value,
+            lastUpdated: new Date().toISOString()
+          }
+        },
+        lastUpdated: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Update Firestore FIRST (listeners are watching Firestore)
+      await updateDoc(universityRef, updateData);
+      console.log(`✅ Updated ${field} for ${sport} team at ${universityId} - changes will appear immediately`);
+      
+      // Also update Realtime Database for consistency
+      try {
+        const universityRealtimeRef = ref(realtimeDb, `universities/${universityId}`);
+        await update(universityRealtimeRef, updateData);
+        console.log('✅ Updated Realtime Database');
+      } catch (realtimeError) {
+        console.log('⚠️ Could not update Realtime Database:', realtimeError);
+      }
+      
+      setMessage({ type: 'success', text: `${field === 'confirmed' ? 'Confirmed' : field === 'paymentLinkSent' ? 'Payment Link Sent' : 'Paid'} status updated for ${sport}!` });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error: any) {
+      console.error(`❌ Error updating ${field} for team:`, error);
+      setMessage({ type: 'error', text: `Failed to update ${field} status` });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
+  const handleTeamTotalChange = async (universityId: string, sport: string, value: number) => {
+    if (!isAdmin) return;
+    
+    try {
+      const universityRef = doc(db, 'universities', universityId);
+      const universityDoc = await getDoc(universityRef);
+      const currentData = universityDoc.data() || {};
+      const currentTeamPayments = currentData.teamPayments || {};
+      
+      const updateData = {
+        teamPayments: {
+          ...currentTeamPayments,
+          [sport]: {
+            ...currentTeamPayments[sport],
+            total: value,
+            lastUpdated: new Date().toISOString()
+          }
+        },
+        lastUpdated: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Update Firestore FIRST (listeners are watching Firestore)
+      await updateDoc(universityRef, updateData);
+      console.log(`✅ Updated total for ${sport} team at ${universityId} - changes will appear immediately`);
+      
+      // Also update Realtime Database for consistency
+      try {
+        const universityRealtimeRef = ref(realtimeDb, `universities/${universityId}`);
+        await update(universityRealtimeRef, updateData);
+        console.log('✅ Updated Realtime Database');
+      } catch (realtimeError) {
+        console.log('⚠️ Could not update Realtime Database:', realtimeError);
+      }
+      
+      setMessage({ type: 'success', text: `Total updated for ${sport}!` });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error: any) {
+      console.error('❌ Error updating team total:', error);
+      setMessage({ type: 'error', text: 'Failed to update total' });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
+  // Legacy handlers for backward compatibility
   const handleCheckboxChange = async (universityId: string, field: 'confirmed' | 'paymentLinkSent' | 'paid', value: boolean) => {
     if (!isAdmin) return;
     
@@ -662,6 +764,8 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
                   hasChanges={hasChanges()}
                   onCheckboxChange={handleCheckboxChange}
                   onTotalChange={handleTotalChange}
+                  onTeamCheckboxChange={handleTeamCheckboxChange}
+                  onTeamTotalChange={handleTeamTotalChange}
                 />
               ))}
             </div>
@@ -696,6 +800,8 @@ interface UniversityContactCardProps {
   hasChanges: boolean;
   onCheckboxChange: (universityId: string, field: 'confirmed' | 'paymentLinkSent' | 'paid', value: boolean) => void;
   onTotalChange: (universityId: string, value: number) => void;
+  onTeamCheckboxChange: (universityId: string, sport: string, field: 'confirmed' | 'paymentLinkSent' | 'paid', value: boolean) => void;
+  onTeamTotalChange: (universityId: string, sport: string, value: number) => void;
 }
 
 function UniversityContactCard({
@@ -710,7 +816,9 @@ function UniversityContactCard({
   originalData,
   onEditChange,
   onView,
-  isViewing
+  isViewing,
+  onTeamCheckboxChange,
+  onTeamTotalChange
 }: UniversityContactCardProps) {
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -859,68 +967,201 @@ function UniversityContactCard({
                   ));
                 })()}
 
-                {/* Payment and Confirmation Checkboxes - Always visible for admins */}
-                {isAdmin && (
+                {/* Payment and Confirmation Checkboxes - Per Team - Always visible for admins */}
+                {isAdmin && university.sports && university.sports.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Confirmed Checkbox */}
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`confirmed-${university.id}`}
-                          checked={university.confirmed || false}
-                          onCheckedChange={(checked) => {
-                            onCheckboxChange(university.id, 'confirmed', checked === true);
-                          }}
-                        />
-                        <Label htmlFor={`confirmed-${university.id}`} className="cursor-pointer font-medium">
-                          Confirmed?
-                        </Label>
-                      </div>
-
-                      {/* Payment Link Sent Checkbox */}
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`paymentLinkSent-${university.id}`}
-                          checked={university.paymentLinkSent || false}
-                          onCheckedChange={(checked) => {
-                            onCheckboxChange(university.id, 'paymentLinkSent', checked === true);
-                          }}
-                        />
-                        <Label htmlFor={`paymentLinkSent-${university.id}`} className="cursor-pointer font-medium">
-                          Payment Link Sent?
-                        </Label>
-                      </div>
-
-                      {/* Paid Checkbox */}
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`paid-${university.id}`}
-                          checked={university.paid || false}
-                          onCheckedChange={(checked) => {
-                            onCheckboxChange(university.id, 'paid', checked === true);
-                          }}
-                        />
-                        <Label htmlFor={`paid-${university.id}`} className="cursor-pointer font-medium">
-                          Paid?
-                        </Label>
-                      </div>
-
-                      {/* Total Input */}
-                      <div className="flex items-center space-x-2">
-                        <DollarSign className="h-4 w-4 text-gray-400" />
-                        <Input
-                          type="number"
-                          placeholder="Total"
-                          value={university.total || ''}
-                          onChange={(e) => {
-                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                            onTotalChange(university.id, value);
-                          }}
-                          className="w-32"
-                        />
-                        <Label className="font-medium">Total</Label>
-                      </div>
-                    </div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Payment & Confirmation (Per Team)</h4>
+                    {(() => {
+                      const contactsList = university.contacts && Array.isArray(university.contacts) && university.contacts.length > 0 
+                        ? university.contacts 
+                        : (university.contactPerson || university.contactEmail || university.contactPhone 
+                          ? [{ 
+                              contactPerson: university.contactPerson, 
+                              contactEmail: university.contactEmail, 
+                              contactPhone: university.contactPhone, 
+                              contactRole: university.contactRole 
+                            }] 
+                          : []);
+                      
+                      // For Imperial and other universities with multiple contacts, split by contact
+                      const hasMultipleContacts = contactsList.length > 1;
+                      
+                      if (hasMultipleContacts && university.name === 'Imperial') {
+                        // Split Imperial by contact - determine which contact manages which team
+                        const contactTeamMap: { [contactEmail: string]: string[] } = {};
+                        const allTeams = [...(university.sports || [])];
+                        const assignedTeams = new Set<string>();
+                        
+                        contactsList.forEach(contact => {
+                          const email = contact.contactEmail || '';
+                          if (!contactTeamMap[email]) {
+                            contactTeamMap[email] = [];
+                          }
+                          // Assign teams based on contact role
+                          if (contact.contactRole?.toLowerCase().includes('football')) {
+                            contactTeamMap[email].push('Football');
+                            assignedTeams.add('Football');
+                          }
+                        });
+                        
+                        // Assign all remaining teams to the first contact that doesn't have Football
+                        const remainingTeams = allTeams.filter(sport => !assignedTeams.has(sport));
+                        const firstNonFootballContact = contactsList.find(contact => 
+                          !contact.contactRole?.toLowerCase().includes('football')
+                        );
+                        if (firstNonFootballContact && remainingTeams.length > 0) {
+                          const email = firstNonFootballContact.contactEmail || '';
+                          if (!contactTeamMap[email]) {
+                            contactTeamMap[email] = [];
+                          }
+                          contactTeamMap[email].push(...remainingTeams);
+                        }
+                        
+                        // Display payment fields grouped by contact
+                        return contactsList.map((contact, contactIndex) => {
+                          const managedTeams = contactTeamMap[contact.contactEmail || ''] || [];
+                          if (managedTeams.length === 0) return null;
+                          
+                          return (
+                            <div key={contactIndex} className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                              <div className="mb-3 pb-2 border-b border-gray-300">
+                                <div className="flex items-center space-x-2">
+                                  <User className="h-4 w-4 text-gray-500" />
+                                  <span className="font-semibold text-sm text-gray-700">
+                                    {contact.contactPerson} ({contact.contactRole})
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Managing: {managedTeams.join(', ')}
+                                </div>
+                              </div>
+                              {managedTeams.map((sport) => {
+                                const teamPayment = university.teamPayments?.[sport] || {};
+                                return (
+                                  <div key={sport} className="mb-4 p-3 bg-white rounded border border-gray-200">
+                                    <div className="font-medium text-sm text-gray-700 mb-3">{sport}</div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id={`confirmed-${university.id}-${sport}`}
+                                          checked={teamPayment.confirmed || false}
+                                          onCheckedChange={(checked) => {
+                                            onTeamCheckboxChange(university.id, sport, 'confirmed', checked === true);
+                                          }}
+                                        />
+                                        <Label htmlFor={`confirmed-${university.id}-${sport}`} className="cursor-pointer text-sm">
+                                          Confirmed?
+                                        </Label>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id={`paymentLinkSent-${university.id}-${sport}`}
+                                          checked={teamPayment.paymentLinkSent || false}
+                                          onCheckedChange={(checked) => {
+                                            onTeamCheckboxChange(university.id, sport, 'paymentLinkSent', checked === true);
+                                          }}
+                                        />
+                                        <Label htmlFor={`paymentLinkSent-${university.id}-${sport}`} className="cursor-pointer text-sm">
+                                          Payment Link Sent?
+                                        </Label>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id={`paid-${university.id}-${sport}`}
+                                          checked={teamPayment.paid || false}
+                                          onCheckedChange={(checked) => {
+                                            onTeamCheckboxChange(university.id, sport, 'paid', checked === true);
+                                          }}
+                                        />
+                                        <Label htmlFor={`paid-${university.id}-${sport}`} className="cursor-pointer text-sm">
+                                          Paid?
+                                        </Label>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <DollarSign className="h-4 w-4 text-gray-400" />
+                                        <Input
+                                          type="number"
+                                          placeholder="Total"
+                                          value={teamPayment.total || ''}
+                                          onChange={(e) => {
+                                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                            onTeamTotalChange(university.id, sport, value);
+                                          }}
+                                          className="w-24 h-8 text-sm"
+                                        />
+                                        <Label className="text-sm">Total</Label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        });
+                      } else {
+                        // For universities with single contact or no special splitting needed
+                        return university.sports.map((sport) => {
+                          const teamPayment = university.teamPayments?.[sport] || {};
+                          return (
+                            <div key={sport} className="mb-4 p-3 bg-gray-50 rounded border border-gray-200">
+                              <div className="font-medium text-sm text-gray-700 mb-3">{sport}</div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`confirmed-${university.id}-${sport}`}
+                                    checked={teamPayment.confirmed || false}
+                                    onCheckedChange={(checked) => {
+                                      onTeamCheckboxChange(university.id, sport, 'confirmed', checked === true);
+                                    }}
+                                  />
+                                  <Label htmlFor={`confirmed-${university.id}-${sport}`} className="cursor-pointer text-sm">
+                                    Confirmed?
+                                  </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`paymentLinkSent-${university.id}-${sport}`}
+                                    checked={teamPayment.paymentLinkSent || false}
+                                    onCheckedChange={(checked) => {
+                                      onTeamCheckboxChange(university.id, sport, 'paymentLinkSent', checked === true);
+                                    }}
+                                  />
+                                  <Label htmlFor={`paymentLinkSent-${university.id}-${sport}`} className="cursor-pointer text-sm">
+                                    Payment Link Sent?
+                                  </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`paid-${university.id}-${sport}`}
+                                    checked={teamPayment.paid || false}
+                                    onCheckedChange={(checked) => {
+                                      onTeamCheckboxChange(university.id, sport, 'paid', checked === true);
+                                    }}
+                                  />
+                                  <Label htmlFor={`paid-${university.id}-${sport}`} className="cursor-pointer text-sm">
+                                    Paid?
+                                  </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <DollarSign className="h-4 w-4 text-gray-400" />
+                                  <Input
+                                    type="number"
+                                    placeholder="Total"
+                                    value={teamPayment.total || ''}
+                                    onChange={(e) => {
+                                      const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                      onTeamTotalChange(university.id, sport, value);
+                                    }}
+                                    className="w-24 h-8 text-sm"
+                                  />
+                                  <Label className="text-sm">Total</Label>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      }
+                    })()}
                   </div>
                 )}
               </div>

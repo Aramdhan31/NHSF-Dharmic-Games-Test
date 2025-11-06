@@ -83,10 +83,14 @@ export const universities = [
   { id: "17", name: "Imperial", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Kabaddi (men's)"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
     contactPerson: "Karthik Venkatesh", contactRole: "President", contactEmail: "karthik.venkatesh23@imperial.ac.uk", contactPhone: "07446108841",
+    contacts: [
+      { contactPerson: "Karthik Venkatesh", contactRole: "President", contactEmail: "karthik.venkatesh23@imperial.ac.uk", contactPhone: "07446108841" },
+      { contactPerson: "Shiv Patel", contactRole: "Football sports coordinator", contactEmail: "Sp1824@ic.ac.uk", contactPhone: "07421727340" }
+    ],
     members: 0, wins: 0, losses: 0, points: 0, description: "Imperial Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "26", name: "Royal Holloway", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball", "Kabaddi (men's)"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
-    contactPerson: "Varun Shivakumar", contactRole: "Events Coordinator", contactEmail: "varun6223@gmail.com", contactPhone: "7769413128",
+    contactPerson: "Varun Shivakumar", contactRole: "Events Coordinator", contactEmail: "varun6223@gmail.com", contactPhone: "07769413128",
     members: 0, wins: 0, losses: 0, points: 0, description: "Royal Holloway Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "54", name: "Cardiff", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },

@@ -9,6 +9,13 @@ import { useNotifications } from "@/hooks/use-notifications"
 import { updateUniversityStatus } from "@/utils/updateUniversity"
 import { useState } from "react"
 
+interface ContactInfo {
+  contactPerson?: string
+  contactEmail?: string
+  contactPhone?: string
+  contactRole?: string
+}
+
 interface University {
   id: string
   name: string
@@ -24,6 +31,9 @@ interface University {
   status?: string
   contactPerson?: string
   contactRole?: string
+  contactEmail?: string
+  contactPhone?: string
+  contacts?: ContactInfo[]
 }
 
 interface UniversityCardProps {
@@ -212,24 +222,61 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
         </div>
 
         {/* Contact Person Section - Public display */}
-        {(university.contactPerson || university.contactRole) && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
-            <div className="flex items-center space-x-2 text-sm text-blue-700">
-              <User className="w-4 h-4" />
-              <span className="font-medium">Contact Person:</span>
+        {(() => {
+          // Display multiple contacts if available, otherwise fall back to single contact
+          const contactsList = university.contacts && university.contacts.length > 0 
+            ? university.contacts 
+            : (university.contactPerson || university.contactEmail || university.contactPhone 
+              ? [{ 
+                  contactPerson: university.contactPerson, 
+                  contactEmail: university.contactEmail, 
+                  contactPhone: university.contactPhone, 
+                  contactRole: university.contactRole 
+                }] 
+              : []);
+          
+          if (contactsList.length === 0) {
+            return null;
+          }
+          
+          return (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-3">
+              <div className="flex items-center space-x-2 text-sm text-blue-700">
+                <User className="w-4 h-4" />
+                <span className="font-medium">
+                  {contactsList.length > 1 ? 'Contact Persons:' : 'Contact Person:'}
+                </span>
+              </div>
+              <div className="text-sm text-blue-600 pl-6 space-y-2">
+                {contactsList.map((contact, index) => (
+                  <div key={index} className="space-y-1">
+                    {contact.contactPerson && (
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{contact.contactPerson}</span>
+                        {contact.contactRole && (
+                          <span className="text-blue-500">({contact.contactRole})</span>
+                        )}
+                      </div>
+                    )}
+                    {contact.contactEmail && (
+                      <div className="text-xs text-blue-500">
+                        {contact.contactEmail}
+                      </div>
+                    )}
+                    {contact.contactPhone && (
+                      <div className="text-xs text-blue-500">
+                        {contact.contactPhone}
+                      </div>
+                    )}
+                    {contactsList.length > 1 && index < contactsList.length - 1 && (
+                      <div className="border-t border-blue-200 my-2"></div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="text-sm text-blue-600 pl-6">
-              {university.contactPerson && (
-                <div className="flex items-center space-x-2">
-                  <span>{university.contactPerson}</span>
-                  {university.contactRole && (
-                    <span className="text-blue-500">({university.contactRole})</span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Sports Section - Only show for competing universities */}
         {(university.status === "competing" || university.isCompeting === true) && (

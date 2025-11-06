@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +35,9 @@ import {
   CheckCircle,
   AlertCircle,
   RotateCcw,
-  AlertTriangle
+  AlertTriangle,
+  CheckSquare,
+  DollarSign
 } from 'lucide-react';
 import { collection, getDocs, doc, updateDoc, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { ref, update } from 'firebase/database';
@@ -51,6 +54,13 @@ interface ContactDetails {
   [key: string]: any;
 }
 
+interface ContactInfo {
+  contactPerson?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  contactRole?: string;
+}
+
 interface UniversityContact {
   id: string;
   name: string;
@@ -58,11 +68,17 @@ interface UniversityContact {
   isCompeting?: boolean;
   status?: string;
   sports?: string[];
-  contactPerson?: string;
+  contactPerson?: string; // Legacy single contact (for backward compatibility)
   contactEmail?: string;
   contactPhone?: string;
   contactRole?: string;
+  contacts?: ContactInfo[]; // Array of multiple contacts
   contactDetails?: any;
+  // Payment and confirmation fields
+  confirmed?: boolean;
+  total?: number;
+  paymentLinkSent?: boolean;
+  paid?: boolean;
 }
 
 interface UniversityContactsManagementProps {
@@ -359,6 +375,76 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
     setEditingData({});
   };
 
+  const hasChanges = () => {
+    return JSON.stringify(editingData) !== JSON.stringify(originalData);
+  };
+
+  const handleCheckboxChange = async (universityId: string, field: 'confirmed' | 'paymentLinkSent' | 'paid', value: boolean) => {
+    if (!isAdmin) return;
+    
+    try {
+      const universityRef = doc(db, 'universities', universityId);
+      const updateData = {
+        [field]: value,
+        lastUpdated: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Update Firestore FIRST (listeners are watching Firestore)
+      await updateDoc(universityRef, updateData);
+      console.log(`✅ Updated ${field} for university ${universityId} - changes will appear immediately`);
+      
+      // Also update Realtime Database for consistency
+      try {
+        const universityRealtimeRef = ref(realtimeDb, `universities/${universityId}`);
+        await update(universityRealtimeRef, updateData);
+        console.log('✅ Updated Realtime Database');
+      } catch (realtimeError) {
+        console.log('⚠️ Could not update Realtime Database:', realtimeError);
+      }
+      
+      setMessage({ type: 'success', text: `${field === 'confirmed' ? 'Confirmed' : field === 'paymentLinkSent' ? 'Payment Link Sent' : 'Paid'} status updated!` });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error: any) {
+      console.error(`❌ Error updating ${field}:`, error);
+      setMessage({ type: 'error', text: `Failed to update ${field} status` });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
+  const handleTotalChange = async (universityId: string, value: number) => {
+    if (!isAdmin) return;
+    
+    try {
+      const universityRef = doc(db, 'universities', universityId);
+      const updateData = {
+        total: value,
+        lastUpdated: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Update Firestore FIRST (listeners are watching Firestore)
+      await updateDoc(universityRef, updateData);
+      console.log(`✅ Updated total for university ${universityId} - changes will appear immediately`);
+      
+      // Also update Realtime Database for consistency
+      try {
+        const universityRealtimeRef = ref(realtimeDb, `universities/${universityId}`);
+        await update(universityRealtimeRef, updateData);
+        console.log('✅ Updated Realtime Database');
+      } catch (realtimeError) {
+        console.log('⚠️ Could not update Realtime Database:', realtimeError);
+      }
+      
+      setMessage({ type: 'success', text: 'Total updated!' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error: any) {
+      console.error('❌ Error updating total:', error);
+      setMessage({ type: 'error', text: 'Failed to update total' });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
   // Only show competing universities in contact management
   const filteredUniversities = universities.filter(uni => {
     const isCompeting = uni.isCompeting === true || uni.status === 'competing';
@@ -498,12 +584,17 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
                   isAdmin={isAdmin}
                   isEditing={editingId === uni.id}
                   editingData={editingData}
+                  originalData={originalData}
                   onEdit={() => handleEdit(uni)}
                   onSave={() => handleSave(uni.id)}
                   onCancel={handleCancel}
+                  onUndo={handleUndo}
                   onEditChange={(data) => setEditingData(data)}
                   onView={() => setViewingId(viewingId === uni.id ? null : uni.id)}
                   isViewing={viewingId === uni.id}
+                  hasChanges={hasChanges()}
+                  onCheckboxChange={handleCheckboxChange}
+                  onTotalChange={handleTotalChange}
                 />
               ))}
             </div>
@@ -536,6 +627,8 @@ interface UniversityContactCardProps {
   onView: () => void;
   isViewing: boolean;
   hasChanges: boolean;
+  onCheckboxChange: (universityId: string, field: 'confirmed' | 'paymentLinkSent' | 'paid', value: boolean) => void;
+  onTotalChange: (universityId: string, value: number) => void;
 }
 
 function UniversityContactCard({
@@ -630,42 +723,130 @@ function UniversityContactCard({
               </div>
             ) : (
               <div className="space-y-3">
-                {(university.contactPerson || university.contactEmail || university.contactPhone) ? (
-                  <>
-                    {university.contactPerson && (
-                      <div className="flex items-center space-x-2 text-sm text-gray-700">
-                        <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{university.contactPerson}</span>
-                          {university.contactRole && (
-                            <span className="text-gray-500 text-xs">({university.contactRole})</span>
-                          )}
+                {/* Display multiple contacts if available, otherwise fall back to single contact */}
+                {(() => {
+                  const contactsList = university.contacts && university.contacts.length > 0 
+                    ? university.contacts 
+                    : (university.contactPerson || university.contactEmail || university.contactPhone 
+                      ? [{ 
+                          contactPerson: university.contactPerson, 
+                          contactEmail: university.contactEmail, 
+                          contactPhone: university.contactPhone, 
+                          contactRole: university.contactRole 
+                        }] 
+                      : []);
+                  
+                  if (contactsList.length === 0) {
+                    return (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <p className="text-sm text-gray-500 flex items-center space-x-2">
+                          <AlertCircle className="h-4 w-4" />
+                          <span>No contact details available. {isAdmin && 'Click Edit to add contact information.'}</span>
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  return contactsList.map((contact, index) => (
+                    <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                      {contactsList.length > 1 && (
+                        <div className="text-xs font-medium text-blue-700 mb-2">
+                          Contact {index + 1} {contactsList.length > 1 ? `of ${contactsList.length}` : ''}
                         </div>
+                      )}
+                      {contact.contactPerson && (
+                        <div className="flex items-center space-x-2 text-sm text-gray-700">
+                          <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{contact.contactPerson}</span>
+                            {contact.contactRole && (
+                              <span className="text-gray-500 text-xs">({contact.contactRole})</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {contact.contactEmail && (
+                        <div className="flex items-center space-x-2 text-sm text-gray-700">
+                          <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <a href={`mailto:${contact.contactEmail}`} className="text-blue-600 hover:underline">
+                            {contact.contactEmail}
+                          </a>
+                        </div>
+                      )}
+                      {contact.contactPhone && (
+                        <div className="flex items-center space-x-2 text-sm text-gray-700">
+                          <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <a href={`tel:${contact.contactPhone}`} className="text-blue-600 hover:underline">
+                            {contact.contactPhone}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ));
+                })()}
+
+                {/* Payment and Confirmation Checkboxes - Always visible for admins */}
+                {isAdmin && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Confirmed Checkbox */}
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`confirmed-${university.id}`}
+                          checked={university.confirmed || false}
+                          onCheckedChange={(checked) => {
+                            onCheckboxChange(university.id, 'confirmed', checked === true);
+                          }}
+                        />
+                        <Label htmlFor={`confirmed-${university.id}`} className="cursor-pointer font-medium">
+                          Confirmed?
+                        </Label>
                       </div>
-                    )}
-                    {university.contactEmail && (
-                      <div className="flex items-center space-x-2 text-sm text-gray-700">
-                        <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <a href={`mailto:${university.contactEmail}`} className="text-blue-600 hover:underline">
-                          {university.contactEmail}
-                        </a>
+
+                      {/* Payment Link Sent Checkbox */}
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`paymentLinkSent-${university.id}`}
+                          checked={university.paymentLinkSent || false}
+                          onCheckedChange={(checked) => {
+                            onCheckboxChange(university.id, 'paymentLinkSent', checked === true);
+                          }}
+                        />
+                        <Label htmlFor={`paymentLinkSent-${university.id}`} className="cursor-pointer font-medium">
+                          Payment Link Sent?
+                        </Label>
                       </div>
-                    )}
-                    {university.contactPhone && (
-                      <div className="flex items-center space-x-2 text-sm text-gray-700">
-                        <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <a href={`tel:${university.contactPhone}`} className="text-blue-600 hover:underline">
-                          {university.contactPhone}
-                        </a>
+
+                      {/* Paid Checkbox */}
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`paid-${university.id}`}
+                          checked={university.paid || false}
+                          onCheckedChange={(checked) => {
+                            onCheckboxChange(university.id, 'paid', checked === true);
+                          }}
+                        />
+                        <Label htmlFor={`paid-${university.id}`} className="cursor-pointer font-medium">
+                          Paid?
+                        </Label>
                       </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                    <p className="text-sm text-gray-500 flex items-center space-x-2">
-                      <AlertCircle className="h-4 w-4" />
-                      <span>No contact details available. {isAdmin && 'Click Edit to add contact information.'}</span>
-                    </p>
+
+                      {/* Total Input */}
+                      <div className="flex items-center space-x-2">
+                        <DollarSign className="h-4 w-4 text-gray-400" />
+                        <Input
+                          type="number"
+                          placeholder="Total"
+                          value={university.total || ''}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                            onTotalChange(university.id, value);
+                          }}
+                          className="w-32"
+                        />
+                        <Label className="font-medium">Total</Label>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

@@ -707,6 +707,57 @@ export default function AdminDashboardPage() {
     }
   }
 
+  const handleUpdatePaymentField = async (universityId: string, field: string, value: any) => {
+    try {
+      setSaving(true)
+      const updateData: any = {
+        [field]: value,
+        updatedAt: new Date().toISOString()
+      }
+      
+      // Update Firestore FIRST (since listeners are watching Firestore)
+      try {
+        const universityRef = doc(db, 'universities', universityId)
+        await updateDoc(universityRef, updateData)
+        console.log(`✅ Updated ${field} in Firestore - changes will appear immediately`)
+      } catch (firestoreError: any) {
+        // If document doesn't exist, create it
+        if (firestoreError?.code === 'not-found' || firestoreError?.code === 5) {
+          const universityRef = doc(db, 'universities', universityId)
+          await setDoc(universityRef, {
+            ...updateData,
+            id: universityId,
+            createdAt: new Date().toISOString()
+          })
+          console.log('✅ Created new Firestore document')
+        } else {
+          console.error('⚠️ Could not update Firestore:', firestoreError)
+        }
+      }
+      
+      // Also update Realtime Database for consistency
+      try {
+        const universityRealtimeRef = ref(realtimeDb, `universities/${universityId}`)
+        await update(universityRealtimeRef, updateData)
+        console.log('✅ Updated Realtime Database')
+      } catch (realtimeError) {
+        console.log('⚠️ Could not update Realtime Database:', realtimeError)
+      }
+      
+      // Update local state immediately
+      setUniversities(prev => prev.map(u => 
+        u.id === universityId ? { ...u, ...updateData } : u
+      ))
+      
+      console.log(`✅ Updated ${field} for university ${universityId}`)
+    } catch (error: any) {
+      console.error(`❌ Error updating ${field}:`, error)
+      setMessage({type: 'error', text: `Failed to update ${field}`})
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleUpdateUniversity = async () => {
     if (!editingUniversity) return
     
@@ -1439,6 +1490,44 @@ export default function AdminDashboardPage() {
                           <Gamepad2 className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                           <span className="line-clamp-2">{uni.sports?.join(', ') || 'No sports'}</span>
                         </div>
+                        {/* Payment/Confirmation Fields */}
+                        <div className="pt-2 border-t border-gray-100 space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Confirmed?</span>
+                            <Checkbox
+                              checked={uni.confirmed || false}
+                              onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'confirmed', checked)}
+                              disabled={saving}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Total:</span>
+                            <Input
+                              type="number"
+                              value={uni.total || ''}
+                              onChange={(e) => handleUpdatePaymentField(uni.id, 'total', e.target.value)}
+                              placeholder="0.00"
+                              className="w-24 h-7 text-xs"
+                              disabled={saving}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Payment Link Sent?</span>
+                            <Checkbox
+                              checked={uni.paymentLinkSent || false}
+                              onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paymentLinkSent', checked)}
+                              disabled={saving}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Paid?</span>
+                            <Checkbox
+                              checked={uni.paid || false}
+                              onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paid', checked)}
+                              disabled={saving}
+                            />
+                          </div>
+                        </div>
                         <div className="flex gap-2 pt-2 border-t border-gray-100">
                           <Button 
                             size="sm" 
@@ -1524,6 +1613,44 @@ export default function AdminDashboardPage() {
                               <div className="flex items-start gap-2 text-sm text-gray-700">
                                 <Gamepad2 className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                                 <span className="line-clamp-2">{uni.sports?.join(', ') || 'No sports'}</span>
+                              </div>
+                              {/* Payment/Confirmation Fields */}
+                              <div className="pt-2 border-t border-gray-100 space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600">Confirmed?</span>
+                                  <Checkbox
+                                    checked={uni.confirmed || false}
+                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'confirmed', checked)}
+                                    disabled={saving}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600">Total:</span>
+                                  <Input
+                                    type="number"
+                                    value={uni.total || ''}
+                                    onChange={(e) => handleUpdatePaymentField(uni.id, 'total', e.target.value)}
+                                    placeholder="0.00"
+                                    className="w-24 h-7 text-xs"
+                                    disabled={saving}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600">Payment Link Sent?</span>
+                                  <Checkbox
+                                    checked={uni.paymentLinkSent || false}
+                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paymentLinkSent', checked)}
+                                    disabled={saving}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600">Paid?</span>
+                                  <Checkbox
+                                    checked={uni.paid || false}
+                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paid', checked)}
+                                    disabled={saving}
+                                  />
+                                </div>
                               </div>
                               <div className="flex gap-2 pt-2 border-t border-gray-100">
                                 <Button 
@@ -2535,6 +2662,47 @@ export default function AdminDashboardPage() {
                   <SelectItem value="affiliated">Affiliated</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            
+            {/* Payment/Confirmation Fields */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="text-sm font-semibold text-gray-700">Payment & Confirmation</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="edit-confirmed"
+                    checked={editingUniversity?.confirmed || false}
+                    onCheckedChange={(checked) => setEditingUniversity({...editingUniversity, confirmed: checked})}
+                  />
+                  <Label htmlFor="edit-confirmed" className="cursor-pointer">Confirmed?</Label>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-total">Total</Label>
+                  <Input
+                    id="edit-total"
+                    type="number"
+                    value={editingUniversity?.total || ''}
+                    onChange={(e) => setEditingUniversity({...editingUniversity, total: e.target.value})}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="edit-paymentLinkSent"
+                    checked={editingUniversity?.paymentLinkSent || false}
+                    onCheckedChange={(checked) => setEditingUniversity({...editingUniversity, paymentLinkSent: checked})}
+                  />
+                  <Label htmlFor="edit-paymentLinkSent" className="cursor-pointer">Payment Link Sent?</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="edit-paid"
+                    checked={editingUniversity?.paid || false}
+                    onCheckedChange={(checked) => setEditingUniversity({...editingUniversity, paid: checked})}
+                  />
+                  <Label htmlFor="edit-paid" className="cursor-pointer">Paid?</Label>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>

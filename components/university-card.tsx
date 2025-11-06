@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Trophy, Target, MapPin, Calendar, EyeOff, Heart, Bell, Edit3, Check, X } from "lucide-react"
+import { Users, Trophy, Target, MapPin, Calendar, EyeOff, Heart, Bell, Edit3, Check, X, User, Briefcase } from "lucide-react"
 import { useFavoriteUniversities } from "@/hooks/use-local-storage"
 import { useNotifications } from "@/hooks/use-notifications"
 import { updateUniversityStatus } from "@/utils/updateUniversity"
@@ -22,6 +22,8 @@ interface University {
   tournamentDate?: string
   isCompeting?: boolean
   status?: string
+  contactPerson?: string
+  contactRole?: string
 }
 
 interface UniversityCardProps {
@@ -208,6 +210,26 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
             </div>
           )}
         </div>
+
+        {/* Contact Person Section - Public display */}
+        {(university.contactPerson || university.contactRole) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
+            <div className="flex items-center space-x-2 text-sm text-blue-700">
+              <User className="w-4 h-4" />
+              <span className="font-medium">Contact Person:</span>
+            </div>
+            <div className="text-sm text-blue-600 pl-6">
+              {university.contactPerson && (
+                <div className="flex items-center space-x-2">
+                  <span>{university.contactPerson}</span>
+                  {university.contactRole && (
+                    <span className="text-blue-500">({university.contactRole})</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Sports Section - Only show for competing universities */}
         {(university.status === "competing" || university.isCompeting === true) && (

@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation"
 import { useFirebase } from "@/lib/firebase-context"
 import { checkAdminStatus, logAdminAccess } from "@/lib/admin-auth"
 import { ref, onValue, update, get, push, set, remove } from "firebase/database"
-import { collection, getDocs, query, orderBy, onSnapshot, doc, updateDoc } from "firebase/firestore"
+import { collection, getDocs, query, orderBy, onSnapshot, doc, updateDoc, setDoc } from "firebase/firestore"
 import { realtimeDb, db } from "@/lib/firebase"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AdminSidebar } from "@/components/ui/admin-sidebar"
 import { LiveScoreAdmin } from "@/components/live-score-admin"
 import { DynamicUpdateStatus } from "@/components/dynamic-update-status"
+import { NightModeScreensaver } from "@/components/night-mode-screensaver"
+import { UniversityContactsManagement } from "@/components/university-contacts-management"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -626,14 +628,45 @@ export default function AdminDashboardPage() {
     
     try {
       setSaving(true)
-      const universityRef = ref(realtimeDb, `universities/${editingUniversity.id}`)
-      await update(universityRef, {
-        ...editingUniversity,
-        updatedAt: new Date().toISOString()
-      })
       
-      setMessage({type: 'success', text: 'University updated successfully!'})
+      // Prepare update data
+      const updateData = {
+        ...editingUniversity,
+        lastUpdated: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      
+      // Update Firestore FIRST (since listeners are watching Firestore)
+      try {
+        const firestoreRef = doc(db, 'universities', editingUniversity.id)
+        await updateDoc(firestoreRef, updateData)
+        console.log('✅ Updated Firestore - changes will appear immediately')
+      } catch (firestoreError: any) {
+        // If document doesn't exist, create it
+        if (firestoreError?.code === 'not-found' || firestoreError?.code === 5) {
+          const firestoreRef = doc(db, 'universities', editingUniversity.id)
+          await setDoc(firestoreRef, {
+            ...updateData,
+            createdAt: new Date().toISOString()
+          })
+          console.log('✅ Created new Firestore document')
+        } else {
+          console.error('⚠️ Could not update Firestore:', firestoreError)
+        }
+      }
+      
+      // Also update Realtime Database for consistency
+      try {
+        const universityRef = ref(realtimeDb, `universities/${editingUniversity.id}`)
+        await update(universityRef, updateData)
+        console.log('✅ Updated Realtime Database')
+      } catch (realtimeError) {
+        console.log('⚠️ Could not update Realtime Database:', realtimeError)
+      }
+      
+      setMessage({type: 'success', text: 'University updated successfully! Changes will appear immediately.'})
       setEditingUniversity(null)
+      // Universities will automatically update via real-time listener (onSnapshot)
     } catch (error) {
       console.error('Error updating university:', error)
       setMessage({type: 'error', text: 'Failed to update university'})
@@ -647,15 +680,26 @@ export default function AdminDashboardPage() {
       setSaving(true)
       const newStatus = university.isCompeting ? 'affiliated' : 'competing'
       
-      // Update in Firestore
-      const universityRef = doc(db, "universities", university.id)
       const updateData = {
         isCompeting: !university.isCompeting,
         status: newStatus,
-        lastUpdated: new Date()
+        lastUpdated: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
       
+      // Update Firestore FIRST (listeners are watching Firestore)
+      const universityRef = doc(db, "universities", university.id)
       await updateDoc(universityRef, updateData)
+      console.log('✅ Updated Firestore - changes will appear immediately')
+      
+      // Also update Realtime Database for consistency
+      try {
+        const universityRealtimeRef = ref(realtimeDb, `universities/${university.id}`)
+        await update(universityRealtimeRef, updateData)
+        console.log('✅ Updated Realtime Database')
+      } catch (realtimeError) {
+        console.log('⚠️ Could not update Realtime Database:', realtimeError)
+      }
       
       // Update the local state immediately for better UX
       setUniversities(prevUniversities => 
@@ -668,7 +712,7 @@ export default function AdminDashboardPage() {
       
       setMessage({
         type: 'success', 
-        text: `${university.name} is now ${newStatus === 'competing' ? 'competing' : 'affiliated'}`
+        text: `${university.name} is now ${newStatus === 'competing' ? 'competing' : 'affiliated'}. Changes will appear immediately.`
       })
       
       console.log(`✅ University status updated: ${university.name} -> ${newStatus}`)
@@ -1019,9 +1063,10 @@ export default function AdminDashboardPage() {
 
             {/* Main Content Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className={`grid w-full ${adminCheck?.isSuperAdmin ? 'grid-cols-8' : 'grid-cols-6'}`}>
+              <TabsList className={`grid w-full ${adminCheck?.isSuperAdmin ? 'grid-cols-9' : 'grid-cols-7'}`}>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="universities">Universities</TabsTrigger>
+                <TabsTrigger value="university-contacts">Contacts</TabsTrigger>
                 <TabsTrigger value="players">Players</TabsTrigger>
                 <TabsTrigger value="matches">Matches</TabsTrigger>
                 <TabsTrigger value="scoring">Scoring</TabsTrigger>
@@ -1290,6 +1335,11 @@ export default function AdminDashboardPage() {
                     </Card>
                   ))}
                 </div>
+              </TabsContent>
+
+              {/* University Contacts Tab */}
+              <TabsContent value="university-contacts" className="space-y-6">
+                <UniversityContactsManagement currentUser={adminCheck} />
               </TabsContent>
 
               {/* Players Tab */}
@@ -2223,6 +2273,44 @@ export default function AdminDashboardPage() {
                 <SelectContent>
                   <SelectItem value="NZ+CZ">North & Central Zone</SelectItem>
                   <SelectItem value="LZ+SZ">London & South Zone</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Sports</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {['Badminton', 'Football', 'Netball', 'Kabaddi (men\'s)', 'Kho Kho'].map((sport) => (
+                  <div key={sport} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`sport-${sport}`}
+                      checked={editingUniversity?.sports?.includes(sport) || false}
+                      onCheckedChange={(checked) => {
+                        const currentSports = editingUniversity?.sports || []
+                        const newSports = checked
+                          ? [...currentSports, sport]
+                          : currentSports.filter((s: string) => s !== sport)
+                        setEditingUniversity({...editingUniversity, sports: newSports})
+                      }}
+                    />
+                    <Label htmlFor={`sport-${sport}`} className="text-sm font-normal cursor-pointer">
+                      {sport}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="edit-status">Status</Label>
+              <Select 
+                value={editingUniversity?.isCompeting ? 'competing' : 'affiliated'} 
+                onValueChange={(value) => setEditingUniversity({...editingUniversity, isCompeting: value === 'competing', status: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="competing">Competing</SelectItem>
+                  <SelectItem value="affiliated">Affiliated</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -186,6 +186,9 @@ export default function TeamsPage() {
             : (staticUni?.sports || []),
           // Merge teamInfo from static data if available
           teamInfo: staticUni?.teamInfo || firebaseData.teamInfo || {},
+          // Include contact details (publicly visible: name and role only)
+          contactPerson: firebaseData.contactPerson || '',
+          contactRole: firebaseData.contactRole || '',
           members: firebaseData.members || 0,
           wins: firebaseData.wins || 0,
           losses: firebaseData.losses || 0,

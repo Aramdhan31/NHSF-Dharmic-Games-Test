@@ -215,6 +215,12 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
     secondContactPhone: secondContactPhoneIndex,
     secondContactRole: secondContactRoleIndex
   });
+  
+  // Log actual headers for debugging
+  console.log('📊 All headers found in Excel:', headers);
+  console.log('📊 Headers that might be second contact:', headers.filter((h: string, i: number) => 
+    h && (h.toLowerCase().includes('2nd') || h.toLowerCase().includes('second') || h.toLowerCase().includes('poc 2'))
+  ));
 
   if (universityNameIndex === -1) {
     console.log('⚠️ Could not find university name column');
@@ -319,14 +325,20 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
       const existing = data[existingIndex];
       const existingContacts = existing.contacts || [];
       
+      console.log(`📊 Merging ${universityName} - Existing contacts:`, existingContacts.length);
+      
       // Add main contact if it's not already in the list
       if (mainContact.contactPerson || mainContact.contactEmail || mainContact.contactPhone) {
         const mainContactExists = existingContacts.some((c: any) => 
           (c.contactEmail && mainContact.contactEmail && c.contactEmail.toLowerCase() === mainContact.contactEmail.toLowerCase()) ||
-          (c.contactPhone && mainContact.contactPhone && c.contactPhone === mainContact.contactPhone)
+          (c.contactPhone && mainContact.contactPhone && c.contactPhone === mainContact.contactPhone) ||
+          (c.contactPerson && mainContact.contactPerson && c.contactPerson.toLowerCase() === mainContact.contactPerson.toLowerCase())
         );
         if (!mainContactExists) {
           existingContacts.push(mainContact);
+          console.log(`📊 Added main contact to ${universityName}:`, mainContact);
+        } else {
+          console.log(`📊 Main contact already exists for ${universityName}`);
         }
       }
       
@@ -334,10 +346,14 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
       if (secondContact.contactPerson || secondContact.contactEmail || secondContact.contactPhone) {
         const secondContactExists = existingContacts.some((c: any) => 
           (c.contactEmail && secondContact.contactEmail && c.contactEmail.toLowerCase() === secondContact.contactEmail.toLowerCase()) ||
-          (c.contactPhone && secondContact.contactPhone && c.contactPhone === secondContact.contactPhone)
+          (c.contactPhone && secondContact.contactPhone && c.contactPhone === secondContact.contactPhone) ||
+          (c.contactPerson && secondContact.contactPerson && c.contactPerson.toLowerCase() === secondContact.contactPerson.toLowerCase())
         );
         if (!secondContactExists) {
           existingContacts.push(secondContact);
+          console.log(`📊 Added second contact to ${universityName}:`, secondContact);
+        } else {
+          console.log(`📊 Second contact already exists for ${universityName}`);
         }
       }
       
@@ -353,6 +369,7 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
       };
       
       console.log(`📊 Merged ${universityName}: Now has ${existingContacts.length} contacts`);
+      console.log(`📊 Final contacts for ${universityName}:`, existingContacts);
     } else {
       // New university entry
       const contactData: ContactData = {
@@ -445,6 +462,36 @@ async function saveContactsToFirebase(contacts: { lz: ContactData[], sz: Contact
       console.log(`📊 Contacts array length for ${universityName}:`, contactData.contacts?.length || 0);
 
       if (matchingDoc) {
+        // Get existing data to merge contacts if needed
+        const existingData = matchingDoc.data();
+        const existingContacts = existingData.contacts && Array.isArray(existingData.contacts) ? existingData.contacts : [];
+        
+        // If we have contacts from the Excel upload, merge them with existing contacts
+        if (contactData.contacts && contactData.contacts.length > 0) {
+          // Merge contacts - add new ones that don't already exist
+          const mergedContacts = [...existingContacts];
+          let addedCount = 0;
+          contactData.contacts.forEach((newContact: any) => {
+            const contactExists = mergedContacts.some((existing: any) => 
+              (existing.contactEmail && newContact.contactEmail && existing.contactEmail.toLowerCase() === newContact.contactEmail.toLowerCase()) ||
+              (existing.contactPhone && newContact.contactPhone && existing.contactPhone === newContact.contactPhone) ||
+              (existing.contactPerson && newContact.contactPerson && existing.contactPerson.toLowerCase() === newContact.contactPerson.toLowerCase())
+            );
+            if (!contactExists) {
+              mergedContacts.push(newContact);
+              addedCount++;
+            }
+          });
+          
+          // Always use merged contacts (they include both existing and new)
+          contactData.contacts = mergedContacts;
+          console.log(`📊 Merged contacts for ${universityName}: ${existingContacts.length} existing + ${addedCount} new = ${mergedContacts.length} total`);
+        } else if (existingContacts.length > 0) {
+          // Keep existing contacts if Excel doesn't have contacts array
+          contactData.contacts = existingContacts;
+          console.log(`📊 Keeping existing contacts for ${universityName}: ${existingContacts.length} contacts`);
+        }
+        
         // Update existing university
         await updateDoc(matchingDoc.ref, contactData);
         updated++;
@@ -475,6 +522,36 @@ async function saveContactsToFirebase(contacts: { lz: ContactData[], sz: Contact
         }
 
         if (matchingDoc && foundMatch) {
+          // Get existing data to merge contacts if needed
+          const existingData = matchingDoc.data();
+          const existingContacts = existingData.contacts && Array.isArray(existingData.contacts) ? existingData.contacts : [];
+          
+          // If we have contacts from the Excel upload, merge them with existing contacts
+          if (contactData.contacts && contactData.contacts.length > 0) {
+            // Merge contacts - add new ones that don't already exist
+            const mergedContacts = [...existingContacts];
+            let addedCount = 0;
+            contactData.contacts.forEach((newContact: any) => {
+              const contactExists = mergedContacts.some((existing: any) => 
+                (existing.contactEmail && newContact.contactEmail && existing.contactEmail.toLowerCase() === newContact.contactEmail.toLowerCase()) ||
+                (existing.contactPhone && newContact.contactPhone && existing.contactPhone === newContact.contactPhone) ||
+                (existing.contactPerson && newContact.contactPerson && existing.contactPerson.toLowerCase() === newContact.contactPerson.toLowerCase())
+              );
+              if (!contactExists) {
+                mergedContacts.push(newContact);
+                addedCount++;
+              }
+            });
+            
+            // Always use merged contacts (they include both existing and new)
+            contactData.contacts = mergedContacts;
+            console.log(`📊 Merged contacts for ${universityName} (variation match): ${existingContacts.length} existing + ${addedCount} new = ${mergedContacts.length} total`);
+          } else if (existingContacts.length > 0) {
+            // Keep existing contacts if Excel doesn't have contacts array
+            contactData.contacts = existingContacts;
+            console.log(`📊 Keeping existing contacts for ${universityName} (variation match): ${existingContacts.length} contacts`);
+          }
+          
           // Update existing university with variation match
           await updateDoc(matchingDoc.ref, contactData);
           updated++;

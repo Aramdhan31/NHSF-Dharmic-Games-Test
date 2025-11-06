@@ -298,6 +298,8 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
       phone: secondContact.contactPhone,
       role: secondContact.contactRole
     });
+    console.log(`📊 ${universityName} - Has second contact:`, 
+      !!(secondContact.contactPerson || secondContact.contactEmail || secondContact.contactPhone));
     
     // Build contacts array if we have multiple contacts
     const contacts: any[] = [];
@@ -307,6 +309,7 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
     if (secondContact.contactPerson || secondContact.contactEmail || secondContact.contactPhone) {
       contacts.push(secondContact);
     }
+    console.log(`📊 ${universityName} - Total contacts array length:`, contacts.length);
     
     // Check if we already have this university in the data (for merging multiple rows)
     const existingIndex = data.findIndex(d => d.universityName.toLowerCase() === universityName.toLowerCase());
@@ -438,12 +441,15 @@ async function saveContactsToFirebase(contacts: { lz: ContactData[], sz: Contact
       }
 
       console.log(`📊 Contact data for ${universityName}:`, contactData);
+      console.log(`📊 Contacts array for ${universityName}:`, contactData.contacts);
+      console.log(`📊 Contacts array length for ${universityName}:`, contactData.contacts?.length || 0);
 
       if (matchingDoc) {
         // Update existing university
         await updateDoc(matchingDoc.ref, contactData);
         updated++;
         console.log(`✅ Updated contact details for ${universityName} (ID: ${matchingDoc.id})`);
+        console.log(`✅ Saved ${contactData.contacts?.length || 0} contacts for ${universityName}`);
       } else {
         // Try to find by partial name match (for variations like "KCL" vs "King's College London")
         const nameVariations = [
@@ -473,6 +479,7 @@ async function saveContactsToFirebase(contacts: { lz: ContactData[], sz: Contact
           await updateDoc(matchingDoc.ref, contactData);
           updated++;
           console.log(`✅ Updated contact details for ${universityName} (matched to: ${matchingDoc.data().name})`);
+          console.log(`✅ Saved ${contactData.contacts?.length || 0} contacts for ${universityName}`);
         } else {
           // Create new university document with contact details
           const docId = `uni-${universityName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`;
@@ -492,6 +499,7 @@ async function saveContactsToFirebase(contacts: { lz: ContactData[], sz: Contact
           });
           created++;
           console.log(`✅ Created new university document for ${universityName} (ID: ${docId})`);
+          console.log(`✅ Saved ${contactData.contacts?.length || 0} contacts for ${universityName}`);
         }
       }
 

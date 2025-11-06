@@ -106,7 +106,7 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
           });
           existingNames.add(nameLower);
         } else {
-          // Update existing university with static data if missing contact details
+          // Update existing university with static data if missing contact details or sports
           const existingIndex = universitiesData.findIndex(uni => 
             (uni.name || '').toLowerCase() === nameLower
           );
@@ -117,6 +117,11 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
               // Ensure isCompeting is set if static says it should be competing
               isCompeting: existing.isCompeting || staticUni.isCompeting || false,
               status: existing.status || (staticUni.isCompeting ? 'competing' : existing.status),
+              // Merge sports from static if missing or empty in Firestore
+              sports: (existing.sports && existing.sports.length > 0 && existing.sports[0] !== 'TBD')
+                ? existing.sports
+                : (staticUni.sports || existing.sports || []),
+              teamInfo: existing.teamInfo || staticUni.teamInfo || {},
               // Merge contact details from static if missing in Firestore
               contactPerson: existing.contactPerson || staticUni.contactPerson || '',
               contactEmail: existing.contactEmail || staticUni.contactEmail || '',
@@ -179,7 +184,7 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
           });
           existingNames.add(nameLower);
         } else {
-          // Update existing university with static data if missing contact details
+          // Update existing university with static data if missing contact details or sports
           const existingIndex = universitiesData.findIndex(uni => 
             (uni.name || '').toLowerCase() === nameLower
           );
@@ -190,6 +195,11 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
               // Ensure isCompeting is set if static says it should be competing
               isCompeting: existing.isCompeting || staticUni.isCompeting || false,
               status: existing.status || (staticUni.isCompeting ? 'competing' : existing.status),
+              // Merge sports from static if missing or empty in Firestore
+              sports: (existing.sports && existing.sports.length > 0 && existing.sports[0] !== 'TBD')
+                ? existing.sports
+                : (staticUni.sports || existing.sports || []),
+              teamInfo: existing.teamInfo || staticUni.teamInfo || {},
               // Merge contact details from static if missing in Firestore
               contactPerson: existing.contactPerson || staticUni.contactPerson || '',
               contactEmail: existing.contactEmail || staticUni.contactEmail || '',

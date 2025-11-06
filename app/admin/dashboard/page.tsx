@@ -2004,6 +2004,8 @@ export default function AdminDashboardPage() {
                   </div>
 
                 </div>
+                  </>
+                )}
               </TabsContent>
 
               {/* University Contacts Tab */}

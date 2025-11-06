@@ -34,6 +34,8 @@ interface LeagueEntry {
   form: string; // Last 5 matches: W, D, L, etc.
   change: 'up' | 'down' | 'same';
   changeValue?: number;
+  isMultiZone?: boolean; // Flag to show both zone colors
+  zones?: string[]; // Array of zones for multi-zone universities
 }
 
 interface UnifiedLeagueTableProps {
@@ -46,7 +48,7 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [selectedZone, setSelectedZone] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'position' | 'points' | 'university'>('position');
+  const [sortBy, setSortBy] = useState<'position' | 'points' | 'university'>('points');
   const [isUsingLiveData, setIsUsingLiveData] = useState(false);
   
   // 🏆 Live points system integration
@@ -74,11 +76,84 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
           console.log('✅ Using live leaderboard data:', leaderboardData.entries.length, 'entries');
           
           // Filter out non-competing universities
-          const competingEntries = leaderboardData.entries.filter(entry => 
+          let competingEntries = leaderboardData.entries.filter(entry => 
             entry.isCompeting === true || 
             entry.status === 'competing' ||
             (entry.status !== 'not-competing' && entry.status !== 'affiliated')
           );
+          
+          // Merge KCL entries from both zones (always merge KCL in league table)
+          const kclEntries = competingEntries.filter(entry => entry.university.toLowerCase() === 'kcl');
+          const otherEntries = competingEntries.filter(entry => entry.university.toLowerCase() !== 'kcl');
+          
+          if (kclEntries.length > 0) {
+            const kclLZ = kclEntries.find(entry => entry.zone === 'LZ+SZ' || entry.zone?.includes('LZ') || entry.zone?.includes('SZ'));
+            const kclNZ = kclEntries.find(entry => entry.zone === 'NZ+CZ' || entry.zone?.includes('NZ') || entry.zone?.includes('CZ'));
+            
+            if (kclLZ && kclNZ) {
+              // Merge KCL entries from both zones
+              const combinedPoints = (kclLZ.totalPoints || 0) + (kclNZ.totalPoints || 0);
+              const combinedWins = (kclLZ.totalWins || 0) + (kclNZ.totalWins || 0);
+              const combinedLosses = (kclLZ.totalLosses || 0) + (kclNZ.totalLosses || 0);
+              const combinedDraws = (kclLZ.totalDraws || 0) + (kclNZ.totalDraws || 0);
+              const combinedMatches = (kclLZ.totalMatches || 0) + (kclNZ.totalMatches || 0);
+              
+              const allSports = new Set([
+                ...(kclLZ.sports || []),
+                ...(kclNZ.sports || [])
+              ]);
+              
+              const mergedKCL: LeagueEntry = {
+                id: kclLZ.id || 'kcl-combined',
+                university: 'KCL',
+                zone: 'LZ+SZ & NZ+CZ',
+                sports: Array.from(allSports),
+                totalMatches: combinedMatches,
+                totalWins: combinedWins,
+                totalLosses: combinedLosses,
+                totalDraws: combinedDraws,
+                totalPoints: combinedPoints,
+                sportsBreakdown: { ...(kclLZ.sportsBreakdown || {}), ...(kclNZ.sportsBreakdown || {}) },
+                form: kclLZ.form || '-----',
+                change: 'same' as const,
+                changeValue: 0,
+                position: 0,
+                isMultiZone: true,
+                zones: ['LZ+SZ', 'NZ+CZ']
+              };
+              
+              competingEntries = [...otherEntries, mergedKCL];
+            } else if (kclLZ || kclNZ) {
+              // Single KCL entry, still show both zone colors
+              const kclEntry = kclLZ || kclNZ;
+              const mergedKCL: LeagueEntry = {
+                ...kclEntry,
+                zone: 'LZ+SZ & NZ+CZ',
+                isMultiZone: true,
+                zones: ['LZ+SZ', 'NZ+CZ']
+              };
+              competingEntries = [...otherEntries, mergedKCL];
+            }
+          }
+          
+          // Sort Olympics-style: by total points (primary), then wins (secondary), then alphabetically (tertiary)
+          competingEntries.sort((a, b) => {
+            // Primary: Total points (descending) - like Olympic medal count
+            if (b.totalPoints !== a.totalPoints) {
+              return b.totalPoints - a.totalPoints;
+            }
+            // Secondary: Total wins (descending) - tiebreaker
+            if (b.totalWins !== a.totalWins) {
+              return b.totalWins - a.totalWins;
+            }
+            // Tertiary: Alphabetical order - final tiebreaker
+            return a.university.localeCompare(b.university);
+          });
+          
+          // Assign positions based on points ranking (Olympics-style)
+          competingEntries.forEach((entry, index) => {
+            entry.position = index + 1;
+          });
           
           console.log('✅ Filtered to competing universities:', competingEntries.length, 'entries');
           setEntries(competingEntries);
@@ -252,18 +327,19 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
         // Create league entries from universities (only competing ones)
         const leagueEntries: LeagueEntry[] = [];
         
-        universitiesList
-          .filter(uni => {
-            // Include ALL universities that are competing (isCompeting: true OR status: 'competing')
-            const isCompeting = uni.isCompeting === true || uni.status === 'competing';
-            
-            // Log universities being filtered out for debugging
-            if (!isCompeting) {
-              console.log(`⚠️ Filtering out non-competing university: ${uni.name || uni.universityName} - isCompeting: ${uni.isCompeting}, status: ${uni.status}`);
-            }
-            
-            return isCompeting;
-          })
+        // Separate KCL entries for zone-specific filtering
+        const kclEntries = universitiesList.filter(uni => {
+          const name = (uni.name || uni.universityName || '').toLowerCase();
+          return name === 'kcl' && (uni.isCompeting === true || uni.status === 'competing');
+        });
+        
+        const otherUniversities = universitiesList.filter(uni => {
+          const name = (uni.name || uni.universityName || '').toLowerCase();
+          return name !== 'kcl' && (uni.isCompeting === true || uni.status === 'competing');
+        });
+        
+        // Process other universities first
+        otherUniversities
           .forEach((uni: any, index: number) => {
           // Skip if university doesn't have required data
           if (!uni.name && !uni.universityName) {
@@ -302,15 +378,56 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
           leagueEntries.push(entry);
         });
         
-        // Sort alphabetically by university name (always alphabetical order as requested)
-        leagueEntries.sort((a, b) => {
-          return a.university.localeCompare(b.university); // Alphabetical order
+        // Handle KCL entries: merge when showing all zones, keep separate when filtering by zone
+        // KCL entries will be handled in the filtering logic below
+        kclEntries.forEach((uni: any, index: number) => {
+          if (!uni.name && !uni.universityName) return;
+          
+          const sports = uni.sports || [];
+          const totalMatches = uni.totalMatches || (uni.wins || 0) + (uni.losses || 0) + (uni.draws || 0);
+          const totalWins = uni.totalWins || uni.wins || 0;
+          const totalLosses = uni.totalLosses || uni.losses || 0;
+          const totalDraws = uni.totalDraws || uni.draws || 0;
+          const totalPoints = uni.totalPoints || uni.points || 0;
+          
+          const entry: LeagueEntry = {
+            id: uni.id || `kcl-${index}`,
+            university: uni.name || uni.universityName || 'KCL',
+            zone: uni.zone || uni.region || 'Unknown',
+            sports: sports,
+            totalMatches: totalMatches,
+            totalWins: totalWins,
+            totalLosses: totalLosses,
+            totalDraws: totalDraws,
+            totalPoints: totalPoints,
+            sportsBreakdown: uni.sportsBreakdown || {},
+            form: uni.form || '-----',
+            change: 'same' as const,
+            changeValue: 0,
+            position: 0
+          };
+          
+          leagueEntries.push(entry);
         });
         
-        // Assign positions
+        // Sort Olympics-style: by total points (primary), then wins (secondary), then alphabetically (tertiary)
+        leagueEntries.sort((a, b) => {
+          // Primary: Total points (descending) - like Olympic medal count
+          if (b.totalPoints !== a.totalPoints) {
+            return b.totalPoints - a.totalPoints;
+          }
+          // Secondary: Total wins (descending) - tiebreaker
+          if (b.totalWins !== a.totalWins) {
+            return b.totalWins - a.totalWins;
+          }
+          // Tertiary: Alphabetical order - final tiebreaker
+          return a.university.localeCompare(b.university);
+        });
+        
+        // Assign positions based on points ranking (Olympics-style)
         leagueEntries.forEach((entry, index) => {
           entry.position = index + 1;
-          console.log(`Position ${entry.position}: ${entry.university} (${entry.totalPoints} points)`);
+          console.log(`Position ${entry.position}: ${entry.university} (${entry.totalPoints} points, ${entry.totalWins} wins)`);
         });
         
         console.log(`✅ Updated league table - ${leagueEntries.length} entries`);
@@ -359,20 +476,121 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
     return 'text-yellow-600';
   };
 
-  const filteredEntries = (entries || []).filter(entry => {
+  // Filter entries first (but don't filter KCL yet - we'll handle it separately)
+  let filteredEntries = (entries || []).filter(entry => {
+    // Skip KCL entries in initial filter - we'll handle them separately
+    if (entry.university.toLowerCase() === 'kcl') return false;
     if (selectedZone === 'all') return true;
     return entry.zone === selectedZone || entry.zone.includes(selectedZone);
   });
+  
+  // Always merge KCL entries and show both zone colors (regardless of filter)
+  // KCL appears once in the league table with both zone colors
+  const allKclEntries = (entries || []).filter(entry => entry.university.toLowerCase() === 'kcl');
+  
+  if (allKclEntries.length > 0) {
+    // Find KCL entries from both zones (from all entries, not just filtered)
+    const kclLZ = allKclEntries.find(entry => entry.zone === 'LZ+SZ' || entry.zone.includes('LZ') || entry.zone.includes('SZ'));
+    const kclNZ = allKclEntries.find(entry => entry.zone === 'NZ+CZ' || entry.zone.includes('NZ') || entry.zone.includes('CZ'));
+    
+    // Always merge KCL entries and show both zone colors
+    if (kclLZ && kclNZ) {
+      // Merge KCL entries from both zones
+      const combinedPoints = (kclLZ.totalPoints || 0) + (kclNZ.totalPoints || 0);
+      const combinedWins = (kclLZ.totalWins || 0) + (kclNZ.totalWins || 0);
+      const combinedLosses = (kclLZ.totalLosses || 0) + (kclNZ.totalLosses || 0);
+      const combinedDraws = (kclLZ.totalDraws || 0) + (kclNZ.totalDraws || 0);
+      const combinedMatches = (kclLZ.totalMatches || 0) + (kclNZ.totalMatches || 0);
+      
+      // Combine sports arrays (unique sports)
+      const allSports = new Set([
+        ...(kclLZ.sports || []),
+        ...(kclNZ.sports || [])
+      ]);
+      
+      const mergedKCL: LeagueEntry = {
+        id: kclLZ.id || 'kcl-combined',
+        university: 'KCL',
+        zone: 'LZ+SZ & NZ+CZ',
+        sports: Array.from(allSports),
+        totalMatches: combinedMatches,
+        totalWins: combinedWins,
+        totalLosses: combinedLosses,
+        totalDraws: combinedDraws,
+        totalPoints: combinedPoints,
+        sportsBreakdown: { ...(kclLZ.sportsBreakdown || {}), ...(kclNZ.sportsBreakdown || {}) },
+        form: kclLZ.form || '-----',
+        change: 'same' as const,
+        changeValue: 0,
+        position: 0,
+        isMultiZone: true,
+        zones: ['LZ+SZ', 'NZ+CZ']
+      };
+      
+      filteredEntries = [...filteredEntries, mergedKCL];
+      console.log(`📊 Merged KCL entries: ${combinedPoints} points from both zones`);
+    } else if (kclLZ) {
+      // Only LZ+SZ entry exists, but still show both zone colors
+      const mergedKCL: LeagueEntry = {
+        ...kclLZ,
+        zone: 'LZ+SZ & NZ+CZ',
+        isMultiZone: true,
+        zones: ['LZ+SZ', 'NZ+CZ']
+      };
+      filteredEntries = [...filteredEntries, mergedKCL];
+    } else if (kclNZ) {
+      // Only NZ+CZ entry exists, but still show both zone colors
+      const mergedKCL: LeagueEntry = {
+        ...kclNZ,
+        zone: 'LZ+SZ & NZ+CZ',
+        isMultiZone: true,
+        zones: ['LZ+SZ', 'NZ+CZ']
+      };
+      filteredEntries = [...filteredEntries, mergedKCL];
+    } else {
+      // Single KCL entry, show both zone colors
+      const kclEntry = allKclEntries[0];
+      const mergedKCL: LeagueEntry = {
+        ...kclEntry,
+        zone: 'LZ+SZ & NZ+CZ',
+        isMultiZone: true,
+        zones: ['LZ+SZ', 'NZ+CZ']
+      };
+      filteredEntries = [...filteredEntries, mergedKCL];
+    }
+  }
+  
+  // Recalculate positions after filtering/merging (Olympics-style)
+  const entriesWithPositions = [...filteredEntries].sort((a, b) => {
+    // Primary: Total points (descending)
+    if (b.totalPoints !== a.totalPoints) {
+      return b.totalPoints - a.totalPoints;
+    }
+    // Secondary: Total wins (descending)
+    if (b.totalWins !== a.totalWins) {
+      return b.totalWins - a.totalWins;
+    }
+    // Tertiary: Alphabetical order
+    return a.university.localeCompare(b.university);
+  });
+  
+  // Assign positions based on points ranking (Olympics-style)
+  entriesWithPositions.forEach((entry, index) => {
+    entry.position = index + 1;
+  });
 
-  const sortedEntries = [...(filteredEntries || [])].sort((a, b) => {
+  const sortedEntries = entriesWithPositions.sort((a, b) => {
     switch (sortBy) {
       case 'points':
+        // Olympics-style: Points (primary), Wins (secondary), Alphabetical (tertiary)
         if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+        if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
         return a.university.localeCompare(b.university);
       case 'university':
         return a.university.localeCompare(b.university);
       case 'position':
       default:
+        // Position already reflects Olympics-style ranking (points-based)
         return a.position - b.position;
     }
   });
@@ -422,7 +640,12 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2">
             <Trophy className="h-6 w-6 text-yellow-500" />
-            <span>NHSF (UK) Dharmic Games League Table</span>
+            <div className="flex flex-col">
+              <span>NHSF (UK) Dharmic Games Leaderboard</span>
+              <span className="text-sm font-normal text-gray-600 mt-1">
+                Olympics-style ranking by total points (universities compete in different numbers of sports)
+              </span>
+            </div>
             <div className="ml-auto flex items-center space-x-2">
               {isUsingLiveData ? (
                 <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
@@ -466,8 +689,8 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
                 onChange={(e) => setSortBy(e.target.value as any)}
                 className="px-3 py-1 border border-gray-300 rounded-md text-sm"
               >
-                <option value="position">Position</option>
-                <option value="points">Points</option>
+                <option value="points">Points (Olympics-style)</option>
+                <option value="position">Rank</option>
                 <option value="university">University</option>
               </select>
             </div>
@@ -487,7 +710,7 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Pos</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Rank</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">University</th>
                   <th className="text-center py-3 px-4 font-semibold text-gray-700">Zone</th>
                   <th className="text-center py-3 px-4 font-semibold text-gray-700">Sports</th>
@@ -495,7 +718,9 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
                   <th className="text-center py-3 px-4 font-semibold text-gray-700">Wins</th>
                   <th className="text-center py-3 px-4 font-semibold text-gray-700">Losses</th>
                   <th className="text-center py-3 px-4 font-semibold text-gray-700">Draws</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Points</th>
+                  <th className="text-center py-3 px-4 font-bold text-orange-600 bg-orange-50 border-l-2 border-orange-300">
+                    Points ⭐
+                  </th>
                   <th className="text-center py-3 px-4 font-semibold text-gray-700">Form</th>
                 </tr>
               </thead>
@@ -518,7 +743,16 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-3 h-3 rounded-full ${getZoneColor(entry.zone)}`}></div>
+                        {/* Show both zone colors for KCL when merged */}
+                        {(entry as any).isMultiZone && (entry as any).zones ? (
+                          <div className="flex items-center space-x-1">
+                            {(entry as any).zones.map((zone: string, idx: number) => (
+                              <div key={idx} className={`w-3 h-3 rounded-full ${getZoneColor(zone)}`}></div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className={`w-3 h-3 rounded-full ${getZoneColor(entry.zone)}`}></div>
+                        )}
                         <div>
                           <h3 className="font-semibold text-lg">{entry.university}</h3>
                         </div>
@@ -545,8 +779,9 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
                     <td className="py-4 px-4 text-center font-semibold text-green-600">{entry.totalWins}</td>
                     <td className="py-4 px-4 text-center font-semibold text-red-600">{entry.totalLosses}</td>
                     <td className="py-4 px-4 text-center font-semibold text-yellow-600">{entry.totalDraws}</td>
-                    <td className="py-4 px-4 text-center">
-                      <span className="text-xl font-bold text-orange-600">{entry.totalPoints}</span>
+                    <td className="py-4 px-4 text-center bg-orange-50 border-l-2 border-orange-300">
+                      <span className="text-2xl font-bold text-orange-600">{entry.totalPoints}</span>
+                      <div className="text-xs text-orange-500 mt-1">Total</div>
                     </td>
                     <td className="py-4 px-4 text-center">
                       <span className={`font-mono text-sm ${getFormColor(entry.form)}`}>

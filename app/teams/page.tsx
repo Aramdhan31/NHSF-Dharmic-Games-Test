@@ -337,6 +337,7 @@ function TeamsPageContent() {
           description: firebaseData.description || staticUni?.description || `${universityName} Hindu Society`,
           tournamentDate: firebaseData.date === "2025-11-22" ? "Nov 22, 2025" : (staticUni?.tournamentDate || "Nov 23, 2025"),
           isCompeting: firebaseData.status === "competing" || firebaseData.isCompeting === true || staticUni?.isCompeting === true,
+          isSchool: (staticUni as any)?.isSchool || (firebaseData as any)?.isSchool || false,
         isRegistered: true
         }
       })
@@ -410,9 +411,16 @@ function TeamsPageContent() {
   )
   
   // Separate schools from universities
-  const competingSchoolsList = filteredUniversities.filter(uni => 
-    (uni.isCompeting === true || uni.status === "competing") && (uni as any).isSchool === true
-  )
+  const competingSchoolsList = filteredUniversities.filter(uni => {
+    const isSchool = (uni as any).isSchool === true
+    const isCompeting = (uni.isCompeting === true || uni.status === "competing")
+    if (isSchool && isCompeting) {
+      console.log('🏫 Found school:', uni.name, 'Zone:', uni.zone, 'isSchool:', isSchool)
+    }
+    return isCompeting && isSchool
+  })
+  
+  console.log('📊 Competing Schools List:', competingSchoolsList.length, competingSchoolsList.map(s => s.name))
   
   const totalCompetingUniversities = competingUniversitiesList.length
   const totalRegisteredUniversities = filteredUniversities.length

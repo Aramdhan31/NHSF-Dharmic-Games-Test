@@ -35,6 +35,7 @@ interface LeagueEntry {
   changeValue?: number;
   isMultiZone?: boolean; // Flag to show both zone colors
   zones?: string[]; // Array of zones for multi-zone universities
+  isSchool?: boolean; // Flag to indicate if this is a school team
 }
 
 interface UnifiedLeagueTableProps {
@@ -317,6 +318,7 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
               tournamentDate: staticUni.tournamentDate,
               isCompeting: true,
               status: 'competing',
+              isSchool: (staticUni as any).isSchool || false,
               isStatic: true
             });
             existingKeys.add(key);
@@ -341,6 +343,7 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
             tournamentDate: staticUni.tournamentDate,
             isCompeting: true, // Always true for static competing universities
             status: 'competing',
+            isSchool: (staticUni as any).isSchool || false,
             isStatic: true // Flag to indicate this is from static code
           });
           existingKeys.add(key);
@@ -363,7 +366,8 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
                 sports: existing.sports && existing.sports.length > 0 && existing.sports[0] !== 'TBD'
                   ? existing.sports
                   : (staticUni.sports || existing.sports || []),
-                teamInfo: existing.teamInfo || staticUni.teamInfo || {}
+                teamInfo: existing.teamInfo || staticUni.teamInfo || {},
+                isSchool: (staticUni as any).isSchool !== undefined ? (staticUni as any).isSchool : (existing as any).isSchool || false
               };
             }
           }
@@ -432,7 +436,8 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
             sportsBreakdown: uni.sportsBreakdown || {},
             change: 'same' as const,
             changeValue: 0,
-            position: 0 // Will be set after sorting
+            position: 0, // Will be set after sorting
+            isSchool: (uni as any).isSchool || false
           };
           
           console.log(`📊 Processing university: ${entry.university} (${entry.zone}) - Points: ${entry.totalPoints}`);
@@ -801,7 +806,14 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
                           <div className={`w-3 h-3 rounded-full ${getZoneColor(entry.zone)}`}></div>
                         )}
                         <div>
-                          <h3 className="font-semibold text-lg">{entry.university}</h3>
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-semibold text-lg">{entry.university}</h3>
+                            {(entry as any).isSchool && (
+                              <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-xs">
+                                School
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>

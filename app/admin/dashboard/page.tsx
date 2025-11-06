@@ -1639,6 +1639,79 @@ export default function AdminDashboardPage() {
                                 </div>
                               </div>
                             )}
+                            
+                            {/* Bulk Action Buttons */}
+                            {selectedUniversity.sports && selectedUniversity.sports.length > 0 && (
+                              <div className="mb-4 flex flex-wrap gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    if (!selectedUniversity.sports) return;
+                                    setSaving(true);
+                                    try {
+                                      for (const sport of selectedUniversity.sports) {
+                                        await handleUpdateTeamPaymentField(selectedUniversity.id, sport, 'confirmed', true);
+                                      }
+                                      setMessage({ type: 'success', text: 'All teams confirmed' });
+                                    } catch (error) {
+                                      setMessage({ type: 'error', text: 'Failed to confirm all teams' });
+                                    } finally {
+                                      setSaving(false);
+                                    }
+                                  }}
+                                  disabled={saving}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Confirm All
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    if (!selectedUniversity.sports) return;
+                                    setSaving(true);
+                                    try {
+                                      for (const sport of selectedUniversity.sports) {
+                                        await handleUpdateTeamPaymentField(selectedUniversity.id, sport, 'paymentLinkSent', true);
+                                      }
+                                      setMessage({ type: 'success', text: 'Payment links marked as sent for all teams' });
+                                    } catch (error) {
+                                      setMessage({ type: 'error', text: 'Failed to update all teams' });
+                                    } finally {
+                                      setSaving(false);
+                                    }
+                                  }}
+                                  disabled={saving}
+                                >
+                                  <Mail className="h-4 w-4 mr-2" />
+                                  Payment Link Sent All
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    if (!selectedUniversity.sports) return;
+                                    setSaving(true);
+                                    try {
+                                      for (const sport of selectedUniversity.sports) {
+                                        await handleUpdateTeamPaymentField(selectedUniversity.id, sport, 'paid', true);
+                                      }
+                                      setMessage({ type: 'success', text: 'All teams marked as paid' });
+                                    } catch (error) {
+                                      setMessage({ type: 'error', text: 'Failed to update all teams' });
+                                    } finally {
+                                      setSaving(false);
+                                    }
+                                  }}
+                                  disabled={saving}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Paid All
+                                </Button>
+                              </div>
+                            )}
+                            
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {selectedUniversity.sports.map((sport: string) => {
                                 const teamPayment = selectedUniversity.teamPayments?.[sport] || {};

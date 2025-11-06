@@ -966,10 +966,6 @@ function TeamsPageContent() {
                         </div>
                         <div className="space-y-1 text-sm">
                           <div className="flex items-center justify-between">
-                            <span className="text-gray-600">Price:</span>
-                            <span className="font-semibold text-gray-900">£{config.price}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
                             <span className="text-gray-600">Capacity:</span>
                             <span className="text-gray-700">{config.maxCapacity} teams</span>
                           </div>

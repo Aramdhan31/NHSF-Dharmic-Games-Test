@@ -96,9 +96,10 @@ interface UniversityContact {
 
 interface UniversityContactsManagementProps {
   currentUser?: any;
+  onUniversityClick?: (university: UniversityContact) => void;
 }
 
-export function UniversityContactsManagement({ currentUser }: UniversityContactsManagementProps) {
+export function UniversityContactsManagement({ currentUser, onUniversityClick }: UniversityContactsManagementProps) {
   const { user } = useFirebase();
   const [universities, setUniversities] = useState<UniversityContact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -766,6 +767,7 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
                   onTotalChange={handleTotalChange}
                   onTeamCheckboxChange={handleTeamCheckboxChange}
                   onTeamTotalChange={handleTeamTotalChange}
+                  onUniversityClick={onUniversityClick}
                 />
               ))}
             </div>
@@ -802,6 +804,7 @@ interface UniversityContactCardProps {
   onTotalChange: (universityId: string, value: number) => void;
   onTeamCheckboxChange: (universityId: string, sport: string, field: 'confirmed' | 'paymentLinkSent' | 'paid', value: boolean) => void;
   onTeamTotalChange: (universityId: string, sport: string, value: number) => void;
+  onUniversityClick?: (university: UniversityContact) => void;
 }
 
 function UniversityContactCard({
@@ -818,10 +821,20 @@ function UniversityContactCard({
   onView,
   isViewing,
   onTeamCheckboxChange,
-  onTeamTotalChange
+  onTeamTotalChange,
+  onUniversityClick
 }: UniversityContactCardProps) {
+  const handleCardClick = () => {
+    if (!isEditing && onUniversityClick) {
+      onUniversityClick(university);
+    }
+  };
+
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card 
+      className={`hover:shadow-md transition-shadow ${!isEditing && onUniversityClick ? 'cursor-pointer' : ''}`}
+      onClick={handleCardClick}
+    >
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -886,11 +899,17 @@ function UniversityContactCard({
                   />
                 </div>
                 <div className="flex space-x-2">
-                  <Button onClick={onSave} size="sm">
+                  <Button onClick={(e) => {
+                    e.stopPropagation();
+                    onSave();
+                  }} size="sm">
                     <Save className="h-4 w-4 mr-2" />
                     Save
                   </Button>
-                  <Button onClick={onCancel} variant="outline" size="sm">
+                  <Button onClick={(e) => {
+                    e.stopPropagation();
+                    onCancel();
+                  }} variant="outline" size="sm">
                     <X className="h-4 w-4 mr-2" />
                     Cancel
                   </Button>
@@ -1170,12 +1189,18 @@ function UniversityContactCard({
 
           <div className="flex items-center space-x-2 ml-4">
             {isAdmin && !isEditing && (
-              <Button onClick={onEdit} variant="outline" size="sm">
+              <Button onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }} variant="outline" size="sm">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>
             )}
-            <Button onClick={onView} variant="ghost" size="sm">
+            <Button onClick={(e) => {
+              e.stopPropagation();
+              onView();
+            }} variant="ghost" size="sm">
               <Eye className="h-4 w-4" />
             </Button>
           </div>

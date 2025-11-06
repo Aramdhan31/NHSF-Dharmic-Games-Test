@@ -25,6 +25,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { 
   Shield, 
   Users, 
@@ -99,6 +109,8 @@ export default function AdminDashboardPage() {
   const [realtimeConnected, setRealtimeConnected] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const mountedRef = useRef(false)
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
+  const [universityToRemove, setUniversityToRemove] = useState<any>(null)
   
   // Admin management states
   const [showAddUniversity, setShowAddUniversity] = useState(false)
@@ -226,6 +238,13 @@ export default function AdminDashboardPage() {
       }
     }
   }, [])
+
+  // Clear selected university when switching away from universities tab
+  useEffect(() => {
+    if (activeTab !== 'universities' && selectedUniversity) {
+      setSelectedUniversity(null)
+    }
+  }, [activeTab, selectedUniversity])
 
   // Set up real-time listeners
   useEffect(() => {
@@ -898,6 +917,18 @@ export default function AdminDashboardPage() {
   }
 
   const handleToggleUniversityStatus = async (university: any) => {
+    // If removing from competing, show confirmation dialog
+    if (university.isCompeting) {
+      setUniversityToRemove(university)
+      setShowRemoveConfirm(true)
+      return
+    }
+    
+    // If adding to competing, proceed directly
+    await performToggleUniversityStatus(university)
+  }
+
+  const performToggleUniversityStatus = async (university: any) => {
     try {
       setSaving(true)
       const newStatus = university.isCompeting ? 'affiliated' : 'competing'
@@ -931,6 +962,11 @@ export default function AdminDashboardPage() {
             : uni
         )
       )
+      
+      // Update selected university if it's the one being changed
+      if (selectedUniversity && selectedUniversity.id === university.id) {
+        setSelectedUniversity({ ...selectedUniversity, isCompeting: !university.isCompeting, status: newStatus })
+      }
       
       setMessage({
         type: 'success', 
@@ -1592,20 +1628,6 @@ export default function AdminDashboardPage() {
                                         />
                                       </div>
                                       <div className="flex items-center justify-between">
-                                        <Label className="text-sm">Total</Label>
-                                        <Input
-                                          type="number"
-                                          value={teamPayment.total || ''}
-                                          onChange={(e) => {
-                                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                                            handleUpdateTeamPaymentField(selectedUniversity.id, sport, 'total', value);
-                                          }}
-                                          className="w-24 h-8 text-sm"
-                                          placeholder="0.00"
-                                          disabled={saving}
-                                        />
-                                      </div>
-                                      <div className="flex items-center justify-between">
                                         <Label className="text-sm">Payment Link Sent?</Label>
                                         <Checkbox
                                           checked={teamPayment.paymentLinkSent || false}
@@ -1793,18 +1815,6 @@ export default function AdminDashboardPage() {
                             />
                           </div>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Total:</span>
-                            <Input
-                              type="number"
-                              value={uni.total || ''}
-                              onChange={(e) => handleUpdatePaymentField(uni.id, 'total', e.target.value)}
-                              placeholder="0.00"
-                              className="w-24 h-7 text-xs"
-                              disabled={saving}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-600">Payment Link Sent?</span>
                             <Checkbox
                               checked={uni.paymentLinkSent || false}
@@ -1932,18 +1942,6 @@ export default function AdminDashboardPage() {
                             />
                           </div>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Total:</span>
-                            <Input
-                              type="number"
-                              value={uni.total || ''}
-                              onChange={(e) => handleUpdatePaymentField(uni.id, 'total', e.target.value)}
-                              placeholder="0.00"
-                              className="w-24 h-7 text-xs"
-                              disabled={saving}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-600">Payment Link Sent?</span>
                             <Checkbox
                               checked={uni.paymentLinkSent || false}
@@ -2011,7 +2009,13 @@ export default function AdminDashboardPage() {
 
               {/* University Contacts Tab */}
               <TabsContent value="university-contacts" className="space-y-6">
-                <UniversityContactsManagement currentUser={adminCheck} />
+                <UniversityContactsManagement 
+                  currentUser={adminCheck} 
+                  onUniversityClick={(university) => {
+                    setSelectedUniversity(university);
+                    setActiveTab("universities");
+                  }}
+                />
               </TabsContent>
 
               {/* Players Tab */}
@@ -3251,6 +3255,39 @@ export default function AdminDashboardPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Remove University Confirmation Dialog */}
+      <AlertDialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove University from Competing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <strong>{universityToRemove?.name}</strong> from competing status? 
+              This will change their status to "affiliated" and they will no longer appear in the league table.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowRemoveConfirm(false)
+              setUniversityToRemove(null)
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (universityToRemove) {
+                  await performToggleUniversityStatus(universityToRemove)
+                  setShowRemoveConfirm(false)
+                  setUniversityToRemove(null)
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   )
 }

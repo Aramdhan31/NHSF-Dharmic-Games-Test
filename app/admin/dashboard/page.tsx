@@ -1849,10 +1849,11 @@ export default function AdminDashboardPage() {
                                                 }),
                                               })
                                               if (!res.ok) throw new Error('Failed to update admin')
-                                              setMessage({ type: 'success', text: 'Admin updated successfully' })
-                                              setEditingAdmin(null)
-                                              setEditAdminForm({})
-                                              fetchAdmins()
+                                  setMessage({ type: 'success', text: 'Admin updated successfully! Changes will appear immediately.' })
+                                  setEditingAdmin(null)
+                                  setEditAdminForm({})
+                                  // Refresh admins immediately
+                                  await fetchAdmins()
                                             } catch (e: any) {
                                               setMessage({ type: 'error', text: e.message || 'Failed to update admin' })
                                             } finally {
@@ -1902,9 +1903,10 @@ export default function AdminDashboardPage() {
                                                 const res = await fetch(`/api/admin-management?email=${encodeURIComponent(admin.email)}`, {
                                                   method: 'DELETE',
                                                 })
-                                                if (!res.ok) throw new Error('Failed to delete admin')
-                                                setMessage({ type: 'success', text: 'Admin deleted successfully' })
-                                                fetchAdmins()
+                                              if (!res.ok) throw new Error('Failed to delete admin')
+                                              setMessage({ type: 'success', text: 'Admin deleted successfully! Changes will appear immediately.' })
+                                              // Refresh admins immediately
+                                              await fetchAdmins()
                                               } catch (e: any) {
                                                 setMessage({ type: 'error', text: e.message || 'Failed to delete admin' })
                                               } finally {
@@ -1996,10 +1998,11 @@ export default function AdminDashboardPage() {
                                     const errorData = await res.json()
                                     throw new Error(errorData.error || 'Failed to create admin')
                                   }
-                                  setMessage({ type: 'success', text: 'Admin created successfully' })
+                                  setMessage({ type: 'success', text: 'Admin created successfully! Changes will appear immediately.' })
                                   setShowAddAdmin(false)
                                   setNewAdmin({ email: '', password: '', name: '', role: 'admin', zones: [] })
-                                  fetchAdmins()
+                                  // Refresh admins immediately
+                                  await fetchAdmins()
                                 } catch (e: any) {
                                   setMessage({ type: 'error', text: e.message || 'Failed to create admin' })
                                 } finally {

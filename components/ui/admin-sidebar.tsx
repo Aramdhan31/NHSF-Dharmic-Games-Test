@@ -80,6 +80,12 @@ export function AdminSidebar() {
       superadminOnly: true
     },
     {
+      title: 'Manage Admins',
+      icon: Crown,
+      href: '/admin/manage-admins',
+      superadminOnly: true
+    },
+    {
       title: 'Settings',
       icon: Settings,
       href: '/admin',
@@ -91,15 +97,25 @@ export function AdminSidebar() {
   const menuItems = allMenuItems.filter((item: any) => isSuperAdmin || !item.superadminOnly);
 
   const handleNavigation = (item: any) => {
-    console.log('🔄 Sidebar clicked:', item.title, 'Tab:', item.tab);
+    console.log('🔄 Sidebar clicked:', item.title, 'Tab:', item.tab, 'Href:', item.href);
     if (typeof window === 'undefined') return;
-    window.location.hash = `#${item.tab}`;
-    try {
-      const event = new CustomEvent('adminTabChange', { detail: item.tab });
-      window.dispatchEvent(event);
-      console.log('✅ Event dispatched:', event);
-    } catch (error) {
-      console.log('❌ Event dispatch failed:', error);
+    
+    // If it's a direct link (no tab), navigate directly
+    if (!item.tab && item.href) {
+      router.push(item.href);
+      return;
+    }
+    
+    // Otherwise, use tab navigation
+    if (item.tab) {
+      window.location.hash = `#${item.tab}`;
+      try {
+        const event = new CustomEvent('adminTabChange', { detail: item.tab });
+        window.dispatchEvent(event);
+        console.log('✅ Event dispatched:', event);
+      } catch (error) {
+        console.log('❌ Event dispatch failed:', error);
+      }
     }
   };
 

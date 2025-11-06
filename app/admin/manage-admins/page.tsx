@@ -54,6 +54,7 @@ interface Admin {
   isActive?: boolean
   createdAt?: number
   approvedAt?: number
+  lastLoginAt?: number | any
   permissions?: {
     canManageAllZones?: boolean
     canManageOwnZone?: boolean
@@ -752,6 +753,20 @@ export default function ManageAdminsPage() {
                                 <span>
                                   Created: {new Date(admin.createdAt).toLocaleDateString()}
                                 </span>
+                              </div>
+                            )}
+                            {admin.lastLoginAt && (
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                <span>
+                                  Last login: {admin.lastLoginAt.toDate ? new Date(admin.lastLoginAt.toDate()).toLocaleString() : new Date(admin.lastLoginAt).toLocaleString()}
+                                </span>
+                              </div>
+                            )}
+                            {!admin.lastLoginAt && (
+                              <div className="flex items-center gap-2 text-gray-400">
+                                <Clock className="h-4 w-4" />
+                                <span>Last login: Never</span>
                               </div>
                             )}
                           </div>

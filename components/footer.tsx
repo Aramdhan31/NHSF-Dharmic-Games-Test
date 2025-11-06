@@ -85,12 +85,6 @@ export function Footer() {
 						>
 							Privacy Policy
 						</a>
-						<a 
-							href="/role-briefs" 
-							className="text-xs text-orange-600 hover:text-orange-700 underline"
-						>
-							Role Briefs
-						</a>
 					</div>
 				</div>
 

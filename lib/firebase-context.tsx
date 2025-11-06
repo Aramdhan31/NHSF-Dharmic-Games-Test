@@ -155,14 +155,40 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
               if (retryResult.success && retryResult.data) {
                 setUser(retryResult.data as User);
               } else {
-                console.log('❌ User not found in Firestore, using minimal fallback user');
-                // Fallback: keep the session and create a minimal user object
-                setUser({
-                  id: firebaseUser.uid,
-                  email: firebaseUser.email || '',
-                  displayName: firebaseUser.displayName || firebaseUser.email || 'Admin',
-                  role: 'admin'
-                } as any);
+                // Check if user is an admin before creating fallback
+                try {
+                  const roleResult = await fetch(`/api/get-admin-role?email=${encodeURIComponent(firebaseUser.email!)}`);
+                  const roleData = await roleResult.json();
+                  
+                  let userRole = 'user'; // Default role
+                  if (roleData.success && roleData.role) {
+                    userRole = roleData.role;
+                    console.log('✅ User is admin, role:', userRole);
+                  } else if (roleData.success && roleData.adminData) {
+                    userRole = roleData.adminData.role || 'admin';
+                    console.log('✅ User is admin, role from adminData:', userRole);
+                  } else {
+                    console.log('⚠️ User not found in Firestore and not an admin');
+                  }
+                  
+                  console.log('❌ User not found in Firestore, using minimal fallback user with role:', userRole);
+                  // Fallback: keep the session and create a minimal user object
+                  setUser({
+                    id: firebaseUser.uid,
+                    email: firebaseUser.email || '',
+                    displayName: firebaseUser.displayName || firebaseUser.email || 'Admin',
+                    role: userRole
+                  } as any);
+                } catch (error) {
+                  console.log('⚠️ Could not check admin status, using default role');
+                  // Fallback: keep the session and create a minimal user object
+                  setUser({
+                    id: firebaseUser.uid,
+                    email: firebaseUser.email || '',
+                    displayName: firebaseUser.displayName || firebaseUser.email || 'Admin',
+                    role: 'user'
+                  } as any);
+                }
                 // Do NOT sign out; allow email-admin fallback to work
               }
             }, 5000);

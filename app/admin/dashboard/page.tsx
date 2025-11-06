@@ -72,7 +72,8 @@ import {
   Database,
   Wifi,
   WifiOff,
-  Menu
+  Menu,
+  DollarSign
 } from "lucide-react"
 
 export default function AdminDashboardPage() {

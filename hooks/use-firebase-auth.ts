@@ -8,9 +8,9 @@ export const useFirebaseAuth = () => {
   const { user, loading, error: contextError, signIn, signUp, signInWithGoogle, signOut, resetPassword, clearError: clearContextError } = useFirebase();
   const [error, setError] = useState<string | null>(null);
 
-  const handleSignIn = async (email: string, password: string) => {
+  const handleSignIn = async (email: string, password: string, rememberMe?: boolean) => {
     setError(null);
-    const result = await signIn(email, password);
+    const result = await signIn(email, password, rememberMe);
     
     if (!result.success) {
       setError(result.error || 'Sign in failed');

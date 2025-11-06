@@ -24,10 +24,11 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
-import { collection, getDocs, doc, updateDoc, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { ref, update } from 'firebase/database';
 import { db, realtimeDb } from '@/lib/firebase';
 import { useFirebase } from '@/lib/firebase-context';
+import { universities as staticUniversities } from '@/app/teams/page';
 
 interface ContactDetails {
   contactPerson?: string;
@@ -73,6 +74,64 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
 
   useEffect(() => {
     loadUniversities();
+    
+    // Set up real-time listener for universities
+    const universitiesRef = collection(db, 'universities');
+    const q = query(universitiesRef, orderBy('name'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const universitiesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as UniversityContact[];
+      
+      // Merge with static universities to include contact details
+      const staticCompetingUnis = staticUniversities.filter(uni => uni.isCompeting === true);
+      const existingNames = new Set(universitiesData.map(uni => (uni.name || '').toLowerCase()));
+      
+      staticCompetingUnis.forEach(staticUni => {
+        const nameLower = staticUni.name.toLowerCase();
+        if (!existingNames.has(nameLower)) {
+          // Add static university to the list
+          universitiesData.push({
+            id: staticUni.id || `static-${staticUni.name.toLowerCase().replace(/\s+/g, '-')}`,
+            name: staticUni.name,
+            zone: staticUni.zone,
+            isCompeting: true,
+            status: 'competing',
+            sports: staticUni.sports || [],
+            contactPerson: staticUni.contactPerson || '',
+            contactEmail: staticUni.contactEmail || '',
+            contactPhone: staticUni.contactPhone || '',
+            contactRole: staticUni.contactRole || ''
+          });
+          existingNames.add(nameLower);
+        } else {
+          // Update existing university with static data if missing contact details
+          const existingIndex = universitiesData.findIndex(uni => 
+            (uni.name || '').toLowerCase() === nameLower
+          );
+          if (existingIndex >= 0) {
+            const existing = universitiesData[existingIndex];
+            universitiesData[existingIndex] = {
+              ...existing,
+              // Merge contact details from static if missing in Firestore
+              contactPerson: existing.contactPerson || staticUni.contactPerson || '',
+              contactEmail: existing.contactEmail || staticUni.contactEmail || '',
+              contactPhone: existing.contactPhone || staticUni.contactPhone || '',
+              contactRole: existing.contactRole || staticUni.contactRole || ''
+            };
+          }
+        }
+      });
+      
+      setUniversities(universitiesData);
+      console.log('📊 Updated universities (real-time):', universitiesData.length);
+      console.log('📊 Sample university with contacts:', universitiesData.find(u => u.contactPerson || u.contactEmail));
+    }, (error) => {
+      console.error('❌ Error in universities listener:', error);
+    });
+    
+    return () => unsubscribe();
   }, []);
 
   const loadUniversities = async () => {
@@ -82,13 +141,55 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
       const q = query(universitiesRef, orderBy('name'));
       const snapshot = await getDocs(q);
       
-      const universitiesData = snapshot.docs.map(doc => ({
+      let universitiesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as UniversityContact[];
 
+      // Merge with static universities to include contact details
+      const staticCompetingUnis = staticUniversities.filter(uni => uni.isCompeting === true);
+      const existingNames = new Set(universitiesData.map(uni => (uni.name || '').toLowerCase()));
+      
+      staticCompetingUnis.forEach(staticUni => {
+        const nameLower = staticUni.name.toLowerCase();
+        if (!existingNames.has(nameLower)) {
+          // Add static university to the list
+          universitiesData.push({
+            id: staticUni.id || `static-${staticUni.name.toLowerCase().replace(/\s+/g, '-')}`,
+            name: staticUni.name,
+            zone: staticUni.zone,
+            isCompeting: true,
+            status: 'competing',
+            sports: staticUni.sports || [],
+            contactPerson: staticUni.contactPerson || '',
+            contactEmail: staticUni.contactEmail || '',
+            contactPhone: staticUni.contactPhone || '',
+            contactRole: staticUni.contactRole || ''
+          });
+          existingNames.add(nameLower);
+        } else {
+          // Update existing university with static data if missing contact details
+          const existingIndex = universitiesData.findIndex(uni => 
+            (uni.name || '').toLowerCase() === nameLower
+          );
+          if (existingIndex >= 0) {
+            const existing = universitiesData[existingIndex];
+            universitiesData[existingIndex] = {
+              ...existing,
+              // Merge contact details from static if missing in Firestore
+              contactPerson: existing.contactPerson || staticUni.contactPerson || '',
+              contactEmail: existing.contactEmail || staticUni.contactEmail || '',
+              contactPhone: existing.contactPhone || staticUni.contactPhone || '',
+              contactRole: existing.contactRole || staticUni.contactRole || ''
+            };
+          }
+        }
+      });
+
       setUniversities(universitiesData);
       console.log('📊 Loaded universities:', universitiesData.length);
+      console.log('📊 Universities with contact details:', universitiesData.filter(u => u.contactPerson || u.contactEmail).length);
+      console.log('📊 Sample university:', universitiesData.find(u => u.contactPerson || u.contactEmail));
     } catch (error: any) {
       console.error('❌ Error loading universities:', error);
       setMessage({ type: 'error', text: 'Failed to load universities' });

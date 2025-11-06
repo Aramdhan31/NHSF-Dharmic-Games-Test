@@ -28,13 +28,36 @@ export default function AdminInfoPage() {
   const router = useRouter()
   const { user, loading } = useFirebase()
 
-  // Redirect logged-in admins to dashboard
+  // Redirect logged-in admins to dashboard (with API check for most up-to-date role)
   useEffect(() => {
     if (!loading && user) {
-      const adminCheck = checkAdminStatus(user)
-      if (adminCheck.isAdmin) {
-        router.push('/admin/dashboard')
+      const checkAndRedirect = async () => {
+        // First check with current user data
+        let adminCheck = checkAdminStatus(user)
+        
+        // Also check admins collection via API for most up-to-date role
+        try {
+          const roleRes = await fetch(`/api/get-admin-role?email=${encodeURIComponent(user.email!)}`)
+          if (roleRes.ok) {
+            const roleData = await roleRes.json()
+            if (roleData.success && roleData.role) {
+              // Override role from admins collection if it exists
+              const userWithRole = {
+                ...user,
+                role: roleData.role
+              }
+              adminCheck = checkAdminStatus(userWithRole)
+            }
+          }
+        } catch (e) {
+          console.log('⚠️ Could not check admins collection:', e)
+        }
+        
+        if (adminCheck.isAdmin) {
+          router.push('/admin/dashboard')
+        }
       }
+      checkAndRedirect()
     }
   }, [user, loading, router])
 

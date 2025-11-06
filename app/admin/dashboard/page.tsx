@@ -1015,7 +1015,8 @@ export default function AdminDashboardPage() {
     }
   }
 
-  if (loading) {
+  // Show loading while checking auth and admin status
+  if (loading || (user && !adminCheck)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
@@ -1026,12 +1027,14 @@ export default function AdminDashboardPage() {
     )
   }
 
-  if (!user) {
+  // Only redirect if we're sure user is not logged in (not loading and no user)
+  if (!loading && !user) {
     router.push('/admin/login')
     return null
   }
 
-  if (!adminCheck?.isAdmin) {
+  // Only show access denied if we're sure user is not admin (not loading, user exists, adminCheck done)
+  if (!loading && user && adminCheck && !adminCheck.isAdmin) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
         <div className="text-center">
@@ -1041,6 +1044,18 @@ export default function AdminDashboardPage() {
           <Button onClick={() => router.push('/admin')}>
             Back to Admin Info
           </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render dashboard until admin check is complete
+  if (!adminCheck?.isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Verifying admin access...</p>
         </div>
       </div>
     )

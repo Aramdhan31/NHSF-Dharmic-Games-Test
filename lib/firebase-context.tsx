@@ -10,7 +10,7 @@ interface FirebaseContextType {
   firebaseUser: FirebaseUser | null;
   loading: boolean;
   error: string | null;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: FirebaseUser }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string; user?: FirebaseUser }>;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ success: boolean; error?: string; user?: FirebaseUser }>;
   signInWithGoogle: () => Promise<{ success: boolean; error?: string; user?: FirebaseUser }>;
   signOut: () => Promise<{ success: boolean; error?: string }>;
@@ -181,13 +181,13 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
     return () => unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe?: boolean) => {
     if (typeof window === 'undefined') {
       return { success: false, error: 'Not available on server side' };
     }
     
     setLoading(true);
-    const result = await authUtils.signIn(email, password);
+    const result = await authUtils.signIn(email, password, rememberMe);
     
     // Don't set loading to false immediately - let the auth state change handler
     // manage loading state as it loads user data from Firestore

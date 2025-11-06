@@ -11,12 +11,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, Lock, ArrowLeft, AlertCircle, Shield, Loader2 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useFirebaseAuth } from "@/hooks/use-firebase-auth"
 import { checkAdminStatus } from "@/lib/admin-auth"
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { user, loading, error, signIn, clearError } = useFirebaseAuth()
@@ -73,14 +75,13 @@ export default function AdminLoginPage() {
   // Redirect if user is already logged in
   useEffect(() => {
     if (user && !loading) {
-      // Wait a bit longer to ensure role is loaded from API
-      const timer = setTimeout(async () => {
+      // Check admin status immediately and redirect
+      const checkAndRedirect = async () => {
         const redirectPath = await getRedirectPath(user)
         console.log('🔐 Login redirect path:', redirectPath, 'for user:', user.email, 'role:', user.role)
         router.push(redirectPath)
-      }, 800) // Wait 800ms for role data to be available from API
-      
-      return () => clearTimeout(timer)
+      }
+      checkAndRedirect()
     }
   }, [user, loading, router, user?.role]) // Include user.role in dependencies
 
@@ -97,7 +98,19 @@ export default function AdminLoginPage() {
     clearError()
     
     try {
-      const result = await signIn(email.trim(), password)
+      // Set persistence before signing in
+      if (rememberMe && typeof window !== 'undefined') {
+        try {
+          const { setPersistence, browserLocalPersistence } = await import('firebase/auth')
+          const { auth } = await import('@/lib/firebase')
+          await setPersistence(auth, browserLocalPersistence)
+          console.log('✅ Remember me enabled - using local persistence')
+        } catch (e) {
+          console.log('⚠️ Could not set persistence:', e)
+        }
+      }
+      
+      const result = await signIn(email.trim(), password, rememberMe)
       
       if (result.success) {
         // Keep loading state while redirect happens
@@ -202,6 +215,21 @@ export default function AdminLoginPage() {
                     disabled={isLoading}
                   />
                 </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="remember-me"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
+                  disabled={isLoading}
+                />
+                <Label
+                  htmlFor="remember-me"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Remember me
+                </Label>
               </div>
 
               <Button

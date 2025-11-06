@@ -7,7 +7,10 @@ import {
   updateProfile,
   signInWithPopup,
   GoogleAuthProvider,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence
 } from 'firebase/auth';
 import { 
   collection, 
@@ -43,12 +46,21 @@ import { auth, db, realtimeDb } from './firebase';
 // Auth utilities
 export const authUtils = {
   // Sign in with email and password
-  signIn: async (email: string, password: string) => {
+  signIn: async (email: string, password: string, rememberMe?: boolean) => {
     if (typeof window === 'undefined' || !auth) {
       return { success: false, error: 'Not available on server side' };
     }
     
     try {
+      // Set persistence before signing in
+      if (rememberMe) {
+        await setPersistence(auth, browserLocalPersistence);
+        console.log('✅ Remember me enabled - using local persistence');
+      } else {
+        await setPersistence(auth, browserSessionPersistence);
+        console.log('✅ Using session persistence');
+      }
+      
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       return { success: true, user: userCredential.user };
     } catch (error: any) {

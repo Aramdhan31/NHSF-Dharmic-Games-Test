@@ -113,7 +113,7 @@ export function AdminSidebar() {
   };
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 shadow-lg h-screen fixed left-0 top-0 z-50">
+    <div className="w-64 bg-white border-r border-gray-200 shadow-lg h-screen overflow-y-auto">
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">

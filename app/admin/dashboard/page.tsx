@@ -71,7 +71,8 @@ import {
   Globe,
   Database,
   Wifi,
-  WifiOff
+  WifiOff,
+  Menu
 } from "lucide-react"
 
 export default function AdminDashboardPage() {
@@ -96,6 +97,7 @@ export default function AdminDashboardPage() {
   const [processing, setProcessing] = useState<string | null>(null)
   const [firebaseAvailable, setFirebaseAvailable] = useState(true)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const mountedRef = useRef(false)
   
   // Admin management states
@@ -1047,17 +1049,40 @@ export default function AdminDashboardPage() {
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100">
-        <AdminSidebar />
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
         
-        <div className="ml-64">
+        {/* Sidebar - Hidden on mobile, shown on desktop */}
+        <div className={`fixed left-0 top-0 z-50 h-screen transition-transform duration-300 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0`}>
+          <AdminSidebar />
+        </div>
+        
+        {/* Main Content - Full width on mobile, with margin on desktop */}
+        <div className="lg:ml-64">
           {/* Header */}
-          <div className={`shadow-sm border-b px-6 py-4 ${
+          <div className={`shadow-sm border-b px-4 sm:px-6 py-4 ${
             adminCheck?.isSuperAdmin 
               ? 'bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-100 border-yellow-300' 
               : 'bg-white border-gray-200'
           }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center space-x-2 sm:space-x-4">
+                {/* Mobile Menu Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="lg:hidden"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
                 <div className="flex items-center space-x-3">
                   <div className={`p-2 rounded-lg ${
                     adminCheck?.isSuperAdmin 
@@ -1071,9 +1096,10 @@ export default function AdminDashboardPage() {
                     )}
                   </div>
                   <div>
-                    <div className="flex items-center gap-3">
-                      <h1 className="text-2xl font-bold text-gray-900">
-                        {adminCheck?.isSuperAdmin ? 'Super Admin Dashboard' : 'Admin Dashboard'}
+                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                      <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
+                        {adminCheck?.isSuperAdmin ? 'Super Admin' : 'Admin'}
+                        <span className="hidden sm:inline"> Dashboard</span>
                       </h1>
                       {adminCheck?.isSuperAdmin && (
                         <Badge className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white border-0 px-3 py-1">
@@ -1088,25 +1114,25 @@ export default function AdminDashboardPage() {
                         </Badge>
                       )}
                     </div>
-                    <p className={`font-medium mt-1 ${
+                    <p className={`font-medium mt-1 text-xs sm:text-sm ${
                       adminCheck?.isSuperAdmin ? 'text-amber-700' : 'text-orange-600'
                     }`}>
-                      Welcome back, {adminName}
+                      Welcome back, <span className="hidden sm:inline">{adminName}</span>
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                <div className="hidden sm:flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${firebaseAvailable ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-xs sm:text-sm text-gray-600">
                       {firebaseAvailable ? 'Firebase Online' : 'Firebase Offline'}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${realtimeConnected ? 'bg-orange-500' : 'bg-gray-400'}`}></div>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-xs sm:text-sm text-gray-600">
                       {realtimeConnected ? 'Live Updates' : 'Offline'}
                     </span>
                   </div>
@@ -1121,17 +1147,18 @@ export default function AdminDashboardPage() {
                     }
                   }}
                   variant="outline"
+                  size="sm"
                   className="text-gray-600"
                 >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
+                  <LogOut className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Logout</span>
                 </Button>
               </div>
             </div>
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto p-4 sm:p-6">
             {message && (
               <Alert className={`mb-6 ${message.type === 'error' ? 'border-red-200 bg-red-50' : message.type === 'warning' ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'}`}>
                 <AlertDescription className={message.type === 'error' ? 'text-red-800' : message.type === 'warning' ? 'text-yellow-800' : 'text-green-800'}>
@@ -1141,8 +1168,8 @@ export default function AdminDashboardPage() {
             )}
 
             {/* Main Content Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className={`grid w-full ${adminCheck?.isSuperAdmin ? 'grid-cols-9' : 'grid-cols-7'}`}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+              <TabsList className={`grid w-full overflow-x-auto ${adminCheck?.isSuperAdmin ? 'grid-cols-9' : 'grid-cols-7'} text-xs sm:text-sm`}>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="universities">Universities</TabsTrigger>
                 <TabsTrigger value="university-contacts">Contacts</TabsTrigger>
@@ -1157,7 +1184,7 @@ export default function AdminDashboardPage() {
               {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6">
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Total Universities</CardTitle>
@@ -1297,17 +1324,17 @@ export default function AdminDashboardPage() {
                 </div>
                 
                 {/* Search and Filter */}
-                <div className="flex space-x-4 mb-6">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
                   <div className="flex-1">
                     <Input
                       placeholder="Search universities..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="max-w-sm"
+                      className="w-full sm:max-w-sm"
                     />
                   </div>
                   <Select value={selectedZone} onValueChange={setSelectedZone}>
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-full sm:w-48">
                       <SelectValue placeholder="Select Zone" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1319,17 +1346,20 @@ export default function AdminDashboardPage() {
                   <Button
                     variant={showNonCompeting ? "default" : "outline"}
                     onClick={() => setShowNonCompeting(!showNonCompeting)}
-                    className="whitespace-nowrap"
+                    className="whitespace-nowrap w-full sm:w-auto"
+                    size="sm"
                   >
                     {showNonCompeting ? (
                       <>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Show All
+                        <Eye className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Show All</span>
+                        <span className="sm:hidden">All</span>
                       </>
                     ) : (
                       <>
-                        <EyeOff className="h-4 w-4 mr-2" />
-                        Show Non-Competing
+                        <EyeOff className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Show Non-Competing</span>
+                        <span className="sm:hidden">Non-Competing</span>
                       </>
                     )}
                   </Button>
@@ -1339,10 +1369,10 @@ export default function AdminDashboardPage() {
                 <div className="space-y-6">
                   {/* Competing Universities Section */}
                   <div>
-                    <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center space-x-2 flex-wrap">
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                       <span>Competing Universities</span>
-                      <Badge className="ml-2">
+                      <Badge className="ml-2 text-xs">
                         {universities.filter(uni => {
                           const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
                           const matchesZone = selectedZone === 'ALL' || uni.zone === selectedZone || uni.region === selectedZone
@@ -1351,7 +1381,7 @@ export default function AdminDashboardPage() {
                         }).length}
                       </Badge>
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                       {universities
                         .filter(uni => {
                           const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1429,10 +1459,10 @@ export default function AdminDashboardPage() {
                   {/* Non-Competing Universities Section - Only shown when toggle is on */}
                   {showNonCompeting && (
                     <div>
-                      <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2">
-                        <AlertCircle className="h-5 w-5 text-gray-500" />
+                      <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center space-x-2 flex-wrap">
+                        <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
                         <span>Other Universities</span>
-                        <Badge variant="secondary" className="ml-2">
+                        <Badge variant="secondary" className="ml-2 text-xs">
                           {universities.filter(uni => {
                             const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
                             const matchesZone = selectedZone === 'ALL' || uni.zone === selectedZone || uni.region === selectedZone
@@ -1441,7 +1471,7 @@ export default function AdminDashboardPage() {
                           }).length}
                         </Badge>
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         {universities
                           .filter(uni => {
                             const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1510,12 +1540,13 @@ export default function AdminDashboardPage() {
               </TabsContent>
 
               {/* Players Tab */}
-              <TabsContent value="players" className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">Players ({players.length})</h2>
-                  <Button onClick={() => setShowAddPlayer(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Player
+              <TabsContent value="players" className="space-y-4 sm:space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                  <h2 className="text-xl sm:text-2xl font-bold">Players ({players.length})</h2>
+                  <Button onClick={() => setShowAddPlayer(true)} size="sm" className="w-full sm:w-auto">
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Add Player</span>
+                    <span className="sm:hidden">Add</span>
                   </Button>
                 </div>
                 
@@ -1642,7 +1673,7 @@ export default function AdminDashboardPage() {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {players.map((player, index) => (
                     <Card key={player.id || `player-${index}`} className="hover:shadow-lg transition-shadow">
                       <CardHeader>
@@ -2499,7 +2530,7 @@ export default function AdminDashboardPage() {
 
       {/* Edit Player Modal */}
       <Dialog open={!!editingPlayer} onOpenChange={() => setEditingPlayer(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Player</DialogTitle>
           </DialogHeader>

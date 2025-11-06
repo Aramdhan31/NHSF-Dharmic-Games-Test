@@ -78,12 +78,18 @@ export function Footer() {
 					<p className="text-gray-500 text-xs">
 						© {new Date().getFullYear()} National Hindu Student Forum(UK). All rights reserved.
 					</p>
-					<div className="mt-2">
+					<div className="mt-2 flex items-center justify-center space-x-4">
 						<a 
 							href="/privacy-policy" 
 							className="text-xs text-orange-600 hover:text-orange-700 underline"
 						>
 							Privacy Policy
+						</a>
+						<a 
+							href="/role-briefs" 
+							className="text-xs text-orange-600 hover:text-orange-700 underline"
+						>
+							Role Briefs
 						</a>
 					</div>
 				</div>

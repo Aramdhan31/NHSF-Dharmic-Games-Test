@@ -932,13 +932,13 @@ function TeamsPageContent() {
             
           </div>
 
-          {/* Sports Capacity & Pricing - Only show for LZ+SZ */}
+          {/* Sports Capacity - Only show for LZ+SZ */}
           {selectedTournament === "LZ+SZ" || selectedTournament === "all" ? (
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="w-5 h-5" />
-                  Sports Capacity & Pricing
+                  Sports Capacity
                 </CardTitle>
               </CardHeader>
               <CardContent>

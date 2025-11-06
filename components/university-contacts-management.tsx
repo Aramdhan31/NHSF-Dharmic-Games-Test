@@ -385,6 +385,28 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
 
   return (
     <div className="space-y-6">
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to save these changes to the contact details? This action cannot be undone easily.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowConfirmDialog(false);
+              setPendingSaveId(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSave}>
+              Confirm & Save
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {/* Header with Upload */}
       <Card>
         <CardHeader>
@@ -675,5 +697,8 @@ function UniversityContactCard({
       </CardContent>
     </Card>
   );
+}
+
+
 }
 

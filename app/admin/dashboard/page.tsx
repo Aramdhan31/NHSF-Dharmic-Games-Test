@@ -1487,47 +1487,52 @@ export default function AdminDashboardPage() {
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((uni, index) => (
                           <Card key={uni.id || `uni-${index}`} className="hover:shadow-lg transition-shadow opacity-75">
-                            <CardHeader>
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg">{uni.name}</CardTitle>
-                                <div className="flex space-x-2">
-                                  <Badge variant="outline">{uni.zone}</Badge>
-                                  <Badge variant="secondary">Not Competing</Badge>
+                            <CardHeader className="pb-3">
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                <CardTitle className="text-base sm:text-lg">{uni.name}</CardTitle>
+                                <div className="flex flex-wrap gap-2">
+                                  <Badge variant="outline" className="text-xs">{uni.zone}</Badge>
+                                  <Badge variant="secondary" className="text-xs">Not Competing</Badge>
                                 </div>
                               </div>
                             </CardHeader>
-                            <CardContent>
-                              <div className="space-y-2">
-                                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                  <Mail className="h-4 w-4" />
-                                  <span>{uni.email}</span>
-                                </div>
-                                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                  <MapPin className="h-4 w-4" />
+                            <CardContent className="pt-0">
+                              <div className="space-y-2 mb-4">
+                                {uni.email && (
+                                  <div className="flex items-start space-x-2 text-xs sm:text-sm text-gray-600">
+                                    <Mail className="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
+                                    <span className="break-words">{uni.email}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600">
+                                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                                   <span>{uni.zone}</span>
                                 </div>
-                                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                  <Gamepad2 className="h-4 w-4" />
-                                  <span>{uni.sports?.join(', ') || 'No sports'}</span>
+                                <div className="flex items-start space-x-2 text-xs sm:text-sm text-gray-600">
+                                  <Gamepad2 className="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
+                                  <span className="break-words">{uni.sports?.join(', ') || 'No sports'}</span>
                                 </div>
                               </div>
-                              <div className="flex space-x-2 mt-4">
+                              <div className="flex flex-col sm:flex-row gap-2 mt-4">
                                 <Button 
                                   size="sm" 
                                   variant="outline"
                                   onClick={() => setEditingUniversity(uni)}
+                                  className="w-full sm:w-auto text-xs"
                                 >
-                                  <Edit className="h-4 w-4 mr-1" />
-                                  Edit
+                                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                                  <span className="hidden sm:inline">Edit</span>
                                 </Button>
                                 <Button 
                                   size="sm" 
                                   variant="default"
                                   onClick={() => handleToggleUniversityStatus(uni)}
                                   disabled={saving}
+                                  className="w-full sm:w-auto text-xs"
                                 >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Add to Competing
+                                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                                  <span className="hidden sm:inline">Add to Competing</span>
+                                  <span className="sm:hidden">Add</span>
                                 </Button>
                               </div>
                             </CardContent>

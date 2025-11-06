@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Users, Trophy, Target, Zap, Calendar, Filter, MapPin, Plus, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createUserWithEmailAndPassword } from "firebase/auth"
 import { ref, set } from "firebase/database"
 import { collection, getDocs, query, orderBy, onSnapshot } from "firebase/firestore"
@@ -190,6 +190,7 @@ export const universities = [
 
 export default function TeamsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedTournament, setSelectedTournament] = useState<"all" | "NZ+CZ" | "LZ+SZ">("all")
   const [selectedUniversity, setSelectedUniversity] = useState<any>(null)
   
@@ -204,6 +205,16 @@ export default function TeamsPage() {
   // Dynamic universities data from Firebase
   const [universitiesData, setUniversitiesData] = useState<any[]>([])
   const [loadingUniversities, setLoadingUniversities] = useState(true)
+
+  // Read zone query parameter from URL and set filter
+  useEffect(() => {
+    const zone = searchParams.get('zone')
+    if (zone === 'LZ+SZ' || zone === 'NZ+CZ') {
+      setSelectedTournament(zone)
+    } else {
+      setSelectedTournament('all')
+    }
+  }, [searchParams])
 
   // Dynamic venue information
   const venueInfo = {

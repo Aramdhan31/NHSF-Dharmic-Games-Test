@@ -157,12 +157,18 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
       const q = query(universitiesRef, orderBy('name'));
       const snapshot = await getDocs(q);
       
-      let universitiesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as UniversityContact[];
+      let universitiesData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          // Ensure sports array is properly included
+          sports: data.sports || [],
+          teamInfo: data.teamInfo || {}
+        } as UniversityContact;
+      });
 
-      // Merge with static universities to include contact details
+      // Merge with static universities to include contact details and sports
       const staticCompetingUnis = staticUniversities.filter(uni => uni.isCompeting === true);
       const existingNames = new Set(universitiesData.map(uni => (uni.name || '').toLowerCase()));
       

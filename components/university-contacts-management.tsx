@@ -133,7 +133,13 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
             contactPerson: staticUni.contactPerson || '',
             contactEmail: staticUni.contactEmail || '',
             contactPhone: staticUni.contactPhone || '',
-            contactRole: staticUni.contactRole || ''
+            contactRole: staticUni.contactRole || '',
+            contacts: staticUni.contacts || (staticUni.contactPerson ? [{ 
+              contactPerson: staticUni.contactPerson, 
+              contactEmail: staticUni.contactEmail, 
+              contactPhone: staticUni.contactPhone, 
+              contactRole: staticUni.contactRole 
+            }] : [])
           });
           existingNames.add(nameLower);
         } else {
@@ -157,7 +163,18 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
               contactPerson: existing.contactPerson || staticUni.contactPerson || '',
               contactEmail: existing.contactEmail || staticUni.contactEmail || '',
               contactPhone: existing.contactPhone || staticUni.contactPhone || '',
-              contactRole: existing.contactRole || staticUni.contactRole || ''
+              contactRole: existing.contactRole || staticUni.contactRole || '',
+              // Merge contacts array - use static contacts if available, otherwise keep existing
+              contacts: staticUni.contacts && staticUni.contacts.length > 0 
+                ? staticUni.contacts 
+                : (existing.contacts && existing.contacts.length > 0 
+                  ? existing.contacts 
+                  : (staticUni.contactPerson ? [{ 
+                      contactPerson: staticUni.contactPerson, 
+                      contactEmail: staticUni.contactEmail, 
+                      contactPhone: staticUni.contactPhone, 
+                      contactRole: staticUni.contactRole 
+                    }] : []))
             };
           }
         }
@@ -217,7 +234,13 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
             contactPerson: staticUni.contactPerson || '',
             contactEmail: staticUni.contactEmail || '',
             contactPhone: staticUni.contactPhone || '',
-            contactRole: staticUni.contactRole || ''
+            contactRole: staticUni.contactRole || '',
+            contacts: staticUni.contacts || (staticUni.contactPerson ? [{ 
+              contactPerson: staticUni.contactPerson, 
+              contactEmail: staticUni.contactEmail, 
+              contactPhone: staticUni.contactPhone, 
+              contactRole: staticUni.contactRole 
+            }] : [])
           });
           existingNames.add(nameLower);
         } else {
@@ -241,7 +264,18 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
               contactPerson: existing.contactPerson || staticUni.contactPerson || '',
               contactEmail: existing.contactEmail || staticUni.contactEmail || '',
               contactPhone: existing.contactPhone || staticUni.contactPhone || '',
-              contactRole: existing.contactRole || staticUni.contactRole || ''
+              contactRole: existing.contactRole || staticUni.contactRole || '',
+              // Merge contacts array - use static contacts if available, otherwise keep existing
+              contacts: staticUni.contacts && staticUni.contacts.length > 0 
+                ? staticUni.contacts 
+                : (existing.contacts && existing.contacts.length > 0 
+                  ? existing.contacts 
+                  : (staticUni.contactPerson ? [{ 
+                      contactPerson: staticUni.contactPerson, 
+                      contactEmail: staticUni.contactEmail, 
+                      contactPhone: staticUni.contactPhone, 
+                      contactRole: staticUni.contactRole 
+                    }] : []))
             };
           }
         }

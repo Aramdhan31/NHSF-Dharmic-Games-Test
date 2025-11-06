@@ -192,30 +192,46 @@ export function LiveStatsCards() {
       player.status === 'active' || !player.status
     ).length;
     
-    // Calculate total sports teams - total count of all sports across all competing universities
-    // This matches the sports section in the league table
+    // Calculate total sports teams - count teams per university (Team A, Team B, etc.)
+    // Each sport can have multiple teams (Team A, Team B), so count all teams
     let totalSportsTeams = 0;
-    const allSports = new Set();
     
-    // Only count sports from competing universities (same as league table)
-    const competingUnis = allUniversitiesList.filter(uni => 
+    // Only count teams from competing universities (same as league table)
+    const competingUnis = allUniversitiesList.filter(uni =>
       uni.isCompeting === true || uni.status === 'competing'
     );
-    
-    console.log('📊 Counting sports from competing universities:', competingUnis.length);
+
+    console.log('📊 Counting teams from competing universities:', competingUnis.length);
     competingUnis.forEach(uni => {
-      if (uni.sports && Array.isArray(uni.sports)) {
-        console.log(`📊 ${uni.name || uni.universityName}: ${uni.sports.length} sports -`, uni.sports);
-        uni.sports.forEach((sport: string) => {
-          allSports.add(sport);
-          totalSportsTeams++; // Count each sport entry (total sports across all universities)
+      if (uni.teamInfo && typeof uni.teamInfo === 'object') {
+        // Count teams from teamInfo (Team A, Team B, etc.)
+        Object.values(uni.teamInfo).forEach((sportTeamInfo: any) => {
+          if (sportTeamInfo && typeof sportTeamInfo === 'object') {
+            // Count Team A
+            if (sportTeamInfo.teamA && (sportTeamInfo.teamA.isOpen !== false)) {
+              totalSportsTeams++;
+            }
+            // Count Team B
+            if (sportTeamInfo.teamB && (sportTeamInfo.teamB.isOpen !== false)) {
+              totalSportsTeams++;
+            }
+          }
         });
+        console.log(`📊 ${uni.name || uni.universityName}: counted teams from teamInfo`);
+      } else if (uni.sports && Array.isArray(uni.sports)) {
+        // Fallback: if no teamInfo, count each sport as 1 team
+        uni.sports.forEach((sport: string) => {
+          if (sport !== 'TBD') {
+            totalSportsTeams++; // Count each sport as 1 team
+          }
+        });
+        console.log(`📊 ${uni.name || uni.universityName}: ${uni.sports.length} sports (fallback - no teamInfo)`);
       } else {
-        console.log(`📊 ${uni.name || uni.universityName}: No sports array`);
+        console.log(`📊 ${uni.name || uni.universityName}: No sports or teamInfo`);
       }
     });
-    
-    console.log('📊 Total sports teams count:', totalSportsTeams);
+
+    console.log('📊 Total sports teams count (teams per uni):', totalSportsTeams);
     
     // Calculate games played
     const completedMatches = matches.filter(match => 

@@ -288,21 +288,19 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
     setEditingData({});
   };
 
+  // Only show competing universities in contact management
   const filteredUniversities = universities.filter(uni => {
+    const isCompeting = uni.isCompeting === true || uni.status === 'competing';
     const matchesSearch = uni.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           uni.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           uni.contactEmail?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesZone = selectedZone === 'all' || uni.zone === selectedZone;
-    return matchesSearch && matchesZone;
+    return isCompeting && matchesSearch && matchesZone;
   });
 
-  // Group by competing status
-  const competingUniversities = filteredUniversities.filter(uni => 
-    uni.isCompeting === true || uni.status === 'competing'
-  );
-  const nonCompetingUniversities = filteredUniversities.filter(uni => 
-    !(uni.isCompeting === true || uni.status === 'competing')
-  );
+  // All filtered universities are competing (no need to group)
+  const competingUniversities = filteredUniversities;
+  const nonCompetingUniversities: UniversityContact[] = []; // Empty - only show competing
 
   if (loading) {
     return (

@@ -7,6 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   Upload, 
   FileText, 
@@ -22,7 +32,9 @@ import {
   Briefcase,
   Loader2,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  RotateCcw,
+  AlertTriangle
 } from 'lucide-react';
 import { collection, getDocs, doc, updateDoc, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { ref, update } from 'firebase/database';
@@ -66,6 +78,9 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
   const [selectedZone, setSelectedZone] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<ContactDetails>({});
+  const [originalData, setOriginalData] = useState<ContactDetails>({}); // Store original values for undo
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingSaveId, setPendingSaveId] = useState<string | null>(null);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
 
@@ -277,18 +292,28 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
 
   const handleEdit = (university: UniversityContact) => {
     if (!isAdmin) return;
-    setEditingId(university.id);
-    setEditingData({
+    const originalValues = {
       contactPerson: university.contactPerson || '',
       contactEmail: university.contactEmail || '',
       contactPhone: university.contactPhone || '',
       contactRole: university.contactRole || ''
-    });
+    };
+    setEditingId(university.id);
+    setEditingData(originalValues);
+    setOriginalData(originalValues); // Store original values for undo
   };
 
-  const handleSave = async (id: string) => {
+  const handleSave = (id: string) => {
+    // Show confirmation dialog before saving
+    setPendingSaveId(id);
+    setShowConfirmDialog(true);
+  };
+
+  const confirmSave = async () => {
+    if (!pendingSaveId) return;
+    
     try {
-      const universityRef = doc(db, 'universities', id);
+      const universityRef = doc(db, 'universities', pendingSaveId);
       const updateData = {
         ...editingData,
         lastUpdated: new Date().toISOString(),
@@ -301,7 +326,7 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
       
       // Also update Realtime Database for consistency
       try {
-        const universityRealtimeRef = ref(realtimeDb, `universities/${id}`);
+        const universityRealtimeRef = ref(realtimeDb, `universities/${pendingSaveId}`);
         await update(universityRealtimeRef, updateData);
         console.log('✅ Updated Realtime Database');
       } catch (realtimeError) {
@@ -311,11 +336,22 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
       setMessage({ type: 'success', text: 'Contact details updated successfully! Changes will appear immediately.' });
       setEditingId(null);
       setEditingData({});
+      setOriginalData({});
+      setShowConfirmDialog(false);
+      setPendingSaveId(null);
       // Universities will automatically update via real-time listener
     } catch (error: any) {
       console.error('❌ Error saving contact details:', error);
       setMessage({ type: 'error', text: 'Failed to save contact details' });
+      setShowConfirmDialog(false);
+      setPendingSaveId(null);
     }
+  };
+
+  const handleUndo = () => {
+    // Revert to original values
+    setEditingData({ ...originalData });
+    setMessage({ type: 'success', text: 'Changes reverted to original values.' });
   };
 
   const handleCancel = () => {
@@ -469,12 +505,15 @@ interface UniversityContactCardProps {
   isAdmin: boolean;
   isEditing: boolean;
   editingData: ContactDetails;
+  originalData: ContactDetails;
   onEdit: () => void;
   onSave: () => void;
   onCancel: () => void;
+  onUndo: () => void;
   onEditChange: (data: ContactDetails) => void;
   onView: () => void;
   isViewing: boolean;
+  hasChanges: boolean;
 }
 
 function UniversityContactCard({
@@ -485,6 +524,8 @@ function UniversityContactCard({
   onEdit,
   onSave,
   onCancel,
+  onUndo,
+  originalData,
   onEditChange,
   onView,
   isViewing

@@ -1366,7 +1366,85 @@ export default function AdminDashboardPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Non-Competing Universities Section - Only shown when toggle is on */}
+                  {showNonCompeting && (
+                    <div>
+                      <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2">
+                        <AlertCircle className="h-5 w-5 text-gray-500" />
+                        <span>Other Universities</span>
+                        <Badge variant="secondary" className="ml-2">
+                          {universities.filter(uni => {
+                            const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
+                            const matchesZone = selectedZone === 'ALL' || uni.zone === selectedZone || uni.region === selectedZone
+                            const isCompeting = uni.isCompeting === true || uni.status === 'competing'
+                            return matchesSearch && matchesZone && !isCompeting
+                          }).length}
+                        </Badge>
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {universities
+                          .filter(uni => {
+                            const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
+                            const matchesZone = selectedZone === 'ALL' || uni.zone === selectedZone || uni.region === selectedZone
+                            const isCompeting = uni.isCompeting === true || uni.status === 'competing'
+                            return matchesSearch && matchesZone && !isCompeting
+                          })
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((uni, index) => (
+                          <Card key={uni.id || `uni-${index}`} className="hover:shadow-lg transition-shadow opacity-75">
+                            <CardHeader>
+                              <div className="flex items-center justify-between">
+                                <CardTitle className="text-lg">{uni.name}</CardTitle>
+                                <div className="flex space-x-2">
+                                  <Badge variant="outline">{uni.zone}</Badge>
+                                  <Badge variant="secondary">Not Competing</Badge>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                  <Mail className="h-4 w-4" />
+                                  <span>{uni.email}</span>
+                                </div>
+                                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                  <MapPin className="h-4 w-4" />
+                                  <span>{uni.zone}</span>
+                                </div>
+                                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                  <Gamepad2 className="h-4 w-4" />
+                                  <span>{uni.sports?.join(', ') || 'No sports'}</span>
+                                </div>
+                              </div>
+                              <div className="flex space-x-2 mt-4">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => setEditingUniversity(uni)}
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Edit
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="default"
+                                  onClick={() => handleToggleUniversityStatus(uni)}
+                                  disabled={saving}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Add to Competing
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 

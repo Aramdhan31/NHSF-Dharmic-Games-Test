@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Trophy, Users, GamepadIcon, Award, Wifi, WifiOff, Building2, Users2, Clock, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ref, onValue, get } from 'firebase/database';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { realtimeDb, db } from '@/lib/firebase';
 import { universities as staticUniversities } from '@/app/teams/page';
 import { useLivePoints } from '@/lib/live-points-system';
@@ -60,19 +60,20 @@ export function LiveStatsCards() {
           const liveStats = snapshot.val();
           console.log('📊 NHSF Live stats received:', liveStats);
           
-          // Recalculate competing universities to match league table exactly
+          // Recalculate competing universities and sports teams to match league table exactly
+          // This will set competingUniversities and totalSportsTeams correctly
           await calculateLiveStats();
           
+          // Update other stats from Firebase, but keep calculated values for universities and teams
           setStats(prev => ({
             ...prev,
-            activePlayers: liveStats.activePlayers || 0,
-            gamesPlayed: liveStats.completedMatches || 0,
+            activePlayers: liveStats.activePlayers || prev.activePlayers,
+            gamesPlayed: liveStats.completedMatches || prev.gamesPlayed,
             hoursCompeted: Math.round((liveStats.completedMatches || 0) * 1.5), // Estimate
             matchesWon: Math.round((liveStats.totalPoints || 0) / 3), // Estimate from points
             zoneChampionships: liveStats.zones || 4,
-            upcomingMatches: liveStats.upcomingMatches || 0,
-            // competingUniversities will be set by calculateLiveStats
-            totalSportsTeams: liveStats.totalSportsTeams || 0
+            upcomingMatches: liveStats.upcomingMatches || prev.upcomingMatches
+            // competingUniversities and totalSportsTeams are set by calculateLiveStats() above
           }));
           
           setIsLive(liveStats.isLive || false);
@@ -84,18 +85,33 @@ export function LiveStatsCards() {
         }
       });
       
-      // Also listen to universities changes to recalculate competing count
+      // Also listen to universities changes to recalculate competing count and sports teams
       const universitiesRef = ref(realtimeDb, 'universities');
       const universitiesListener = onValue(universitiesRef, async () => {
-        console.log('🏫 Universities changed - recalculating competing count...');
+        console.log('🏫 Universities changed - recalculating competing count and sports teams...');
         await calculateLiveStats();
       });
+      
+      // Also listen to Firestore universities for real-time updates
+      let firestoreUnsubscribe: (() => void) | null = null;
+      try {
+        firestoreUnsubscribe = onSnapshot(collection(db, 'universities'), async () => {
+          console.log('🏫 Firestore universities changed - recalculating stats...');
+          await calculateLiveStats();
+        });
+      } catch (error) {
+        console.log('📊 Firestore listener not available, using Realtime Database only');
+      }
 
       setLoading(false);
 
       // Cleanup function
       return () => {
         statsListener();
+        universitiesListener();
+        if (firestoreUnsubscribe) {
+          firestoreUnsubscribe();
+        }
       };
     } catch (error) {
       console.error('❌ Error setting up NHSF live stats:', error);

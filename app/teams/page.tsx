@@ -102,11 +102,15 @@ export const universities = [
   { id: "43", name: "DMU", zone: "NZ+CZ", sports: ["Football", "Badminton"],
     teamInfo: { "Football": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: true } } },
     members: 0, wins: 0, losses: 0, points: 0, description: "DMU Hindu Society", tournamentDate: "Nov 22, 2025", isCompeting: true },
-  // Special case: KCL Woman's Kabaddi - KCL is in LZ+SZ but their women's kabaddi team is competing in NZ+CZ
+  // Special case: KCL Woman's Kabaddi - KCL is competing in BOTH zones
+  // LZ+SZ: Badminton, Football, Kabaddi (men's)
+  // NZ+CZ: Kabaddi (women's) only - due to insufficient teams in LZ+SZ
   { id: "18-kabaddi-womens", name: "KCL", zone: "NZ+CZ", sports: ["Kabaddi (women's)"],
     teamInfo: { "Kabaddi (women's)": { teamA: { isOpen: true }, teamB: null } },
+    contactPerson: "Riya Sareen", contactRole: "Head of Sports", contactEmail: "riyasareen06@gmail.com", contactPhone: "07790092007",
+    approximateTotal: 33, // Approx £33 (Kabaddi women's A £33)
     members: 0, wins: 0, losses: 0, points: 0, 
-    description: "KCL Hindu Society - Women's Kabaddi team competing in North & Central Zone (KCL is a London university, but their women's kabaddi team is competing in NZ+CZ due to insufficient teams in LZ+SZ).",
+    description: "KCL Hindu Society - Women's Kabaddi team competing in North & Central Zone. Note: KCL is competing in BOTH zones - in London & South Zone (LZ+SZ) for Badminton, Football, and Men's Kabaddi, and in North & Central Zone (NZ+CZ) for Women's Kabaddi only due to insufficient teams in LZ+SZ.",
     tournamentDate: "Nov 22, 2025", isCompeting: true, isSpecialCase: true, originalZone: "LZ+SZ" },
   // Schools competing in NZ+CZ
   { id: "trafford-school", name: "Trafford", zone: "NZ+CZ", sports: ["Badminton", "Football", "Kho Kho", "Netball"],

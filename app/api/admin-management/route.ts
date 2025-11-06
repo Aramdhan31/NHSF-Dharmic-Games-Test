@@ -158,6 +158,58 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { email, newPassword } = body;
+
+    if (!email || !newPassword) {
+      return NextResponse.json(
+        { success: false, error: 'Email and new password are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!adminDb) {
+      return NextResponse.json(
+        { success: false, error: 'Database not initialized' },
+        { status: 500 }
+      );
+    }
+
+    // Update password in Firebase Auth
+    const auth = getAuth();
+    try {
+      const userRecord = await auth.getUserByEmail(email);
+      await auth.updateUser(userRecord.uid, {
+        password: newPassword
+      });
+    } catch (e: any) {
+      console.error('❌ Error updating password:', e);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to update password in Firebase Auth',
+          details: e.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, message: 'Password updated successfully' });
+  } catch (error: any) {
+    console.error('❌ Error changing password:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to change password',
+        details: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

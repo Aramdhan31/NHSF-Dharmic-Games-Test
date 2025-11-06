@@ -292,7 +292,6 @@ export default function AdminRequestPage() {
               <h4 className="font-semibold text-blue-900 mb-2">What happens next?</h4>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>• Your request will be reviewed by Super Admin Arjun Ramdhan</li>
-                <li>• You'll receive an email notification once approved</li>
                 <li>• Approved admins get access to the admin dashboard</li>
                 <li>• This process typically takes 24-48 hours</li>
               </ul>

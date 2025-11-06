@@ -13,6 +13,7 @@ import { LiveScoreAdmin } from "@/components/live-score-admin"
 import { DynamicUpdateStatus } from "@/components/dynamic-update-status"
 import { NightModeScreensaver } from "@/components/night-mode-screensaver"
 import { UniversityContactsManagement } from "@/components/university-contacts-management"
+import { universities as staticUniversities } from "@/app/teams/page"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -237,7 +238,7 @@ export default function AdminDashboardPage() {
     const universitiesUnsubscribe = onSnapshot(q, (snapshot) => {
       try {
         console.log('🏛️ Universities data changed in admin dashboard - ALL ADMINS WILL SEE THIS UPDATE')
-        const universitiesList = snapshot.docs.map(doc => ({
+        let universitiesList = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           zone: doc.data().zone || "Unknown",
@@ -257,6 +258,60 @@ export default function AdminDashboardPage() {
           status: doc.data().status || "affiliated"
         }))
         
+        // Add competing universities from static code (teams page) that might not be in Firebase yet
+        const staticCompetingUnis = staticUniversities.filter(uni => uni.isCompeting === true);
+        console.log('📊 Found competing universities in static code:', staticCompetingUnis.length);
+        
+        // Merge static universities with Firebase data (avoid duplicates by name)
+        const existingNames = new Set(universitiesList.map(uni => (uni.name || '').toLowerCase()));
+        
+        staticCompetingUnis.forEach(staticUni => {
+          const nameLower = staticUni.name.toLowerCase();
+          if (!existingNames.has(nameLower)) {
+            // Add static university to the list
+            universitiesList.push({
+              id: staticUni.id || `static-${staticUni.name.toLowerCase().replace(/\s+/g, '-')}`,
+              name: staticUni.name,
+              zone: staticUni.zone,
+              sports: staticUni.sports || [],
+              teamInfo: staticUni.teamInfo || {},
+              members: staticUni.members || 0,
+              wins: staticUni.wins || 0,
+              losses: staticUni.losses || 0,
+              points: staticUni.points || 0,
+              description: staticUni.description || `${staticUni.name} Hindu Society`,
+              tournamentDate: staticUni.tournamentDate,
+              isCompeting: true, // Always true for static competing universities
+              status: 'competing',
+              isStatic: true, // Flag to indicate this is from static code
+              email: '', // May not have email in static data
+              contactPerson: '',
+              contactEmail: '',
+              contactPhone: '',
+              contactRole: ''
+            });
+            existingNames.add(nameLower);
+          } else {
+            // Update existing university with static data if it's missing isCompeting flag
+            const existingIndex = universitiesList.findIndex(uni => 
+              (uni.name || '').toLowerCase() === nameLower
+            );
+            if (existingIndex >= 0 && staticUni.isCompeting === true) {
+              const existing = universitiesList[existingIndex];
+              universitiesList[existingIndex] = {
+                ...existing,
+                isCompeting: true,
+                status: existing.status || 'competing',
+                // Merge sports and teamInfo from static if missing
+                sports: existing.sports && existing.sports.length > 0 && existing.sports[0] !== 'TBD'
+                  ? existing.sports
+                  : (staticUni.sports || existing.sports || []),
+                teamInfo: existing.teamInfo || staticUni.teamInfo || {}
+              };
+            }
+          }
+        });
+        
         // Ensure each university has a unique id
         const universitiesWithIds = universitiesList.map((uni, index) => ({
           ...uni,
@@ -265,6 +320,7 @@ export default function AdminDashboardPage() {
         setUniversities(universitiesWithIds)
         console.log('📊 Universities updated in real-time:', universitiesWithIds.length)
         console.log('📊 Competing universities:', universitiesWithIds.filter(u => u.isCompeting).length)
+        console.log('📊 Sample competing universities:', universitiesWithIds.filter(u => u.isCompeting).slice(0, 3).map(u => u.name))
       } catch (error) {
         console.error('❌ Error in universities listener:', error)
       }

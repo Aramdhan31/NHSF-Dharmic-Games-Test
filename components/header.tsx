@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Menu, X, Trophy, Users, GamepadIcon, Settings, Play, UserPlus, GraduationCap, Shield } from "lucide-react"
+import { Menu, X, Trophy, Users, GamepadIcon, Settings, Play, UserPlus, Shield } from "lucide-react"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -113,13 +113,6 @@ export function Header() {
         <UserPlus className="w-4 h-4" />
         <span>Individual Registration</span>
       </Link>
-      <Link
-        href="/university/login"
-        className="flex items-center space-x-1 text-gray-700 hover:text-orange-600 transition-colors font-medium text-sm px-3 py-2 rounded-md hover:bg-orange-50"
-      >
-        <GraduationCap className="w-4 h-4" />
-        <span>University Login</span>
-      </Link>
           </nav>
 
 
@@ -180,15 +173,6 @@ export function Header() {
         <UserPlus className="w-5 h-5" />
         <span>Individual Registration</span>
       </Link>
-      <Link
-        href="/university/login"
-        className="flex items-center space-x-2 text-gray-700 hover:text-orange-600 transition-colors py-2 px-4 font-medium"
-        onClick={() => setIsMenuOpen(false)}
-      >
-        <GraduationCap className="w-5 h-5" />
-        <span>University Login</span>
-      </Link>
-
             </nav>
           </div>
         )}

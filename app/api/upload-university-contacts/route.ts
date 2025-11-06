@@ -109,17 +109,39 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
   }) as any[][];
 
   if (jsonData.length < 2) {
+    console.log('⚠️ Sheet has less than 2 rows');
     return data; // Need at least header row
   }
 
   // First row is headers
   const headers = jsonData[0] as string[];
   console.log('📊 Headers found:', headers);
+  console.log('📊 Total columns:', headers.length);
 
-  // Find university name column (usually first column or contains "university", "name", etc.)
-  const universityNameIndex = headers.findIndex((h: string) => 
-    h && (h.toLowerCase().includes('university') || h.toLowerCase().includes('name') || h.toLowerCase().includes('uni'))
-  );
+  // Find column indices for specific fields
+  const findColumnIndex = (patterns: string[]): number => {
+    for (const pattern of patterns) {
+      const index = headers.findIndex((h: string) => 
+        h && h.toLowerCase().includes(pattern.toLowerCase())
+      );
+      if (index !== -1) return index;
+    }
+    return -1;
+  };
+
+  const universityNameIndex = findColumnIndex(['university name', 'university', 'name', 'uni']);
+  const contactPersonIndex = findColumnIndex(['main contact person name', 'contact person', 'contact name', 'name']);
+  const contactEmailIndex = findColumnIndex(['main contact person email', 'contact email', 'email']);
+  const contactPhoneIndex = findColumnIndex(['main contact person phone', 'contact phone', 'phone number', 'phone', 'mobile']);
+  const contactRoleIndex = findColumnIndex(['main contact person role', 'contact role', 'role', 'position']);
+
+  console.log('📊 Column indices:', {
+    universityName: universityNameIndex,
+    contactPerson: contactPersonIndex,
+    contactEmail: contactEmailIndex,
+    contactPhone: contactPhoneIndex,
+    contactRole: contactRoleIndex
+  });
 
   if (universityNameIndex === -1) {
     console.log('⚠️ Could not find university name column');
@@ -140,41 +162,21 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
       continue;
     }
 
-    // Build contact data object, excluding columns K-P
+    // Build contact data object
     const contactData: ContactData = {
       universityName,
-      zone
+      zone,
+      contactPerson: contactPersonIndex !== -1 && row[contactPersonIndex] ? String(row[contactPersonIndex]).trim() : '',
+      contactEmail: contactEmailIndex !== -1 && row[contactEmailIndex] ? String(row[contactEmailIndex]).trim() : '',
+      contactPhone: contactPhoneIndex !== -1 && row[contactPhoneIndex] ? String(row[contactPhoneIndex]).trim() : '',
+      contactRole: contactRoleIndex !== -1 && row[contactRoleIndex] ? String(row[contactRoleIndex]).trim() : ''
     };
 
-    // Map all other columns (excluding K-P)
-    headers.forEach((header, index) => {
-      // Skip excluded columns (K-P = indices 10-15)
-      if (EXCLUDE_COLUMNS.includes(index)) {
-        return;
-      }
-
-      if (header && header.trim() !== '') {
-        const headerKey = header.trim().toLowerCase()
-          .replace(/\s+/g, '_')
-          .replace(/[^a-z0-9_]/g, '');
-        
-        const value = row[index];
-        if (value !== undefined && value !== null && value !== '') {
-          // Map common contact fields
-          if (headerKey.includes('contact') && headerKey.includes('person') || headerKey.includes('name')) {
-            contactData.contactPerson = String(value).trim();
-          } else if (headerKey.includes('email')) {
-            contactData.contactEmail = String(value).trim();
-          } else if (headerKey.includes('phone') || headerKey.includes('mobile') || headerKey.includes('number')) {
-            contactData.contactPhone = String(value).trim();
-          } else if (headerKey.includes('role') || headerKey.includes('position')) {
-            contactData.contactRole = String(value).trim();
-          } else {
-            // Store other fields
-            contactData[headerKey] = String(value).trim();
-          }
-        }
-      }
+    console.log(`📊 Parsed ${universityName}:`, {
+      contactPerson: contactData.contactPerson,
+      contactEmail: contactData.contactEmail,
+      contactPhone: contactData.contactPhone,
+      contactRole: contactData.contactRole
     });
 
     if (contactData.universityName) {
@@ -182,6 +184,7 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
     }
   }
 
+  console.log(`📊 Total universities parsed from ${zone} sheet:`, data.length);
   return data;
 }
 
@@ -195,56 +198,93 @@ async function saveContactsToFirebase(contacts: { lz: ContactData[], sz: Contact
     ...contacts.sz.map(c => ({ ...c, zone: 'LZ+SZ' as const }))
   ];
 
+  console.log(`📊 Saving ${allContacts.length} contacts to Firebase...`);
+
   for (const contact of allContacts) {
     try {
       const universityName = contact.universityName.trim();
+      console.log(`📊 Processing: ${universityName}`);
       
-      // Try to find existing university by name
+      // Try to find existing university by name (case-insensitive)
       const universitiesRef = collection(db, 'universities');
-      const q = query(universitiesRef, where('name', '==', universityName));
-      const snapshot = await getDocs(q);
+      const allUniversities = await getDocs(universitiesRef);
+      
+      // Find matching university (case-insensitive)
+      let matchingDoc = null;
+      allUniversities.forEach(doc => {
+        const data = doc.data();
+        const docName = (data.name || '').trim().toLowerCase();
+        const searchName = universityName.toLowerCase();
+        if (docName === searchName) {
+          matchingDoc = doc;
+        }
+      });
 
       const contactData = {
         contactPerson: contact.contactPerson || '',
         contactEmail: contact.contactEmail || '',
         contactPhone: contact.contactPhone || '',
         contactRole: contact.contactRole || '',
-        contactDetails: {
-          ...contact,
-          uploadedAt: new Date().toISOString(),
-          uploadedFrom: 'excel'
-        },
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
 
-      if (!snapshot.empty) {
+      console.log(`📊 Contact data for ${universityName}:`, contactData);
+
+      if (matchingDoc) {
         // Update existing university
-        const docRef = snapshot.docs[0];
-        await updateDoc(docRef.ref, {
-          ...contactData,
-          zone: contact.zone
-        });
+        await updateDoc(matchingDoc.ref, contactData);
         updated++;
-        console.log(`✅ Updated contact details for ${universityName}`);
+        console.log(`✅ Updated contact details for ${universityName} (ID: ${matchingDoc.id})`);
       } else {
-        // Create new university document with contact details
-        const docId = `uni-${universityName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-        await setDoc(doc(db, 'universities', docId), {
-          name: universityName,
-          zone: contact.zone,
-          ...contactData,
-          isCompeting: false,
-          status: 'affiliated',
-          sports: [],
-          teamInfo: {},
-          members: 0,
-          wins: 0,
-          losses: 0,
-          points: 0,
-          createdAt: new Date().toISOString()
-        });
-        created++;
-        console.log(`✅ Created new university document for ${universityName}`);
+        // Try to find by partial name match (for variations like "KCL" vs "King's College London")
+        const nameVariations = [
+          universityName,
+          universityName.replace(/&/g, 'and'),
+          universityName.replace(/and/g, '&'),
+          universityName.replace(/university of /i, ''),
+          universityName.replace(/university/i, 'uni')
+        ];
+        
+        let foundMatch = false;
+        for (const variation of nameVariations) {
+          allUniversities.forEach(doc => {
+            const data = doc.data();
+            const docName = (data.name || '').trim().toLowerCase();
+            const searchName = variation.toLowerCase();
+            if (docName.includes(searchName) || searchName.includes(docName)) {
+              matchingDoc = doc;
+              foundMatch = true;
+            }
+          });
+          if (foundMatch) break;
+        }
+
+        if (matchingDoc && foundMatch) {
+          // Update existing university with variation match
+          await updateDoc(matchingDoc.ref, contactData);
+          updated++;
+          console.log(`✅ Updated contact details for ${universityName} (matched to: ${matchingDoc.data().name})`);
+        } else {
+          // Create new university document with contact details
+          const docId = `uni-${universityName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`;
+          await setDoc(doc(db, 'universities', docId), {
+            name: universityName,
+            zone: contact.zone,
+            ...contactData,
+            isCompeting: true, // Assume competing if contact details are provided
+            status: 'competing',
+            sports: [],
+            teamInfo: {},
+            members: 0,
+            wins: 0,
+            losses: 0,
+            points: 0,
+            createdAt: new Date().toISOString()
+          });
+          created++;
+          console.log(`✅ Created new university document for ${universityName} (ID: ${docId})`);
+        }
       }
 
       total++;
@@ -253,6 +293,7 @@ async function saveContactsToFirebase(contacts: { lz: ContactData[], sz: Contact
     }
   }
 
+  console.log(`📊 Saved ${total} contacts (${updated} updated, ${created} created)`);
   return { total, updated, created };
 }
 

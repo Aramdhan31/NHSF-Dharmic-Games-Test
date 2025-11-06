@@ -1394,63 +1394,59 @@ export default function AdminDashboardPage() {
                         })
                         .sort((a, b) => a.name.localeCompare(b.name))
                     .map((uni, index) => (
-                    <Card key={uni.id || `uni-${index}`} className="hover:shadow-lg transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                          <CardTitle className="text-base sm:text-lg">{uni.name}</CardTitle>
-                          <div className="flex flex-wrap gap-2">
-                            <Badge variant="outline" className="text-xs">{uni.zone}</Badge>
-                            <Badge variant={uni.isCompeting ? "default" : "secondary"} className="text-xs">
+                    <Card key={uni.id || `uni-${index}`} className="hover:shadow-md transition-all border border-gray-200">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <CardTitle className="text-lg font-semibold text-gray-900">{uni.name}</CardTitle>
+                          <div className="flex flex-wrap gap-2 flex-shrink-0">
+                            <Badge variant="outline" className="text-xs font-medium">{uni.zone}</Badge>
+                            <Badge variant={uni.isCompeting ? "default" : "secondary"} className="text-xs font-medium">
                               {uni.isCompeting ? "Competing" : "Not Competing"}
                             </Badge>
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-2 mb-4">
-                          {uni.email && (
-                            <div className="flex items-start space-x-2 text-xs sm:text-sm text-gray-600">
-                              <Mail className="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
-                              <span className="break-words">{uni.email}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600">
-                            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                            <span>{uni.zone}</span>
+                      <CardContent className="space-y-3">
+                        {uni.email && (
+                          <div className="flex items-center gap-2 text-sm text-gray-700">
+                            <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                            <span className="truncate">{uni.email}</span>
                           </div>
-                          <div className="flex items-start space-x-2 text-xs sm:text-sm text-gray-600">
-                            <Gamepad2 className="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
-                            <span className="break-words">{uni.sports?.join(', ') || 'No sports'}</span>
-                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-sm text-gray-700">
+                          <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <span>{uni.zone}</span>
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                        <div className="flex items-start gap-2 text-sm text-gray-700">
+                          <Gamepad2 className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <span className="line-clamp-2">{uni.sports?.join(', ') || 'No sports'}</span>
+                        </div>
+                        <div className="flex gap-2 pt-2 border-t border-gray-100">
                           <Button 
                             size="sm" 
                             variant="outline"
                             onClick={() => setEditingUniversity(uni)}
-                            className="w-full sm:w-auto text-xs"
+                            className="flex-1 sm:flex-none text-xs"
                           >
-                            <Edit className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                            <span className="hidden sm:inline">Edit</span>
+                            <Edit className="h-3.5 w-3.5 mr-1.5" />
+                            Edit
                           </Button>
                           <Button 
                             size="sm" 
                             variant={uni.isCompeting ? "destructive" : "default"}
                             onClick={() => handleToggleUniversityStatus(uni)}
                             disabled={saving}
-                            className="w-full sm:w-auto text-xs"
+                            className="flex-1 sm:flex-none text-xs"
                           >
                             {uni.isCompeting ? (
                               <>
-                                <XCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                                <span className="hidden sm:inline">Remove from Competing</span>
-                                <span className="sm:hidden">Remove</span>
+                                <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                                Remove
                               </>
                             ) : (
                               <>
-                                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                                <span className="hidden sm:inline">Add to Competing</span>
-                                <span className="sm:hidden">Add</span>
+                                <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                                Add
                               </>
                             )}
                           </Button>
@@ -1486,53 +1482,50 @@ export default function AdminDashboardPage() {
                           })
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((uni, index) => (
-                          <Card key={uni.id || `uni-${index}`} className="hover:shadow-lg transition-shadow opacity-75">
-                            <CardHeader className="pb-3">
-                              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                                <CardTitle className="text-base sm:text-lg">{uni.name}</CardTitle>
-                                <div className="flex flex-wrap gap-2">
-                                  <Badge variant="outline" className="text-xs">{uni.zone}</Badge>
-                                  <Badge variant="secondary" className="text-xs">Not Competing</Badge>
+                          <Card key={uni.id || `uni-${index}`} className="hover:shadow-md transition-all border border-gray-200 opacity-75">
+                            <CardHeader className="pb-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <CardTitle className="text-lg font-semibold text-gray-900">{uni.name}</CardTitle>
+                                <div className="flex flex-wrap gap-2 flex-shrink-0">
+                                  <Badge variant="outline" className="text-xs font-medium">{uni.zone}</Badge>
+                                  <Badge variant="secondary" className="text-xs font-medium">Not Competing</Badge>
                                 </div>
                               </div>
                             </CardHeader>
-                            <CardContent className="pt-0">
-                              <div className="space-y-2 mb-4">
-                                {uni.email && (
-                                  <div className="flex items-start space-x-2 text-xs sm:text-sm text-gray-600">
-                                    <Mail className="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
-                                    <span className="break-words">{uni.email}</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600">
-                                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                                  <span>{uni.zone}</span>
+                            <CardContent className="space-y-3">
+                              {uni.email && (
+                                <div className="flex items-center gap-2 text-sm text-gray-700">
+                                  <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate">{uni.email}</span>
                                 </div>
-                                <div className="flex items-start space-x-2 text-xs sm:text-sm text-gray-600">
-                                  <Gamepad2 className="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
-                                  <span className="break-words">{uni.sports?.join(', ') || 'No sports'}</span>
-                                </div>
+                              )}
+                              <div className="flex items-center gap-2 text-sm text-gray-700">
+                                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                <span>{uni.zone}</span>
                               </div>
-                              <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                              <div className="flex items-start gap-2 text-sm text-gray-700">
+                                <Gamepad2 className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                                <span className="line-clamp-2">{uni.sports?.join(', ') || 'No sports'}</span>
+                              </div>
+                              <div className="flex gap-2 pt-2 border-t border-gray-100">
                                 <Button 
                                   size="sm" 
                                   variant="outline"
                                   onClick={() => setEditingUniversity(uni)}
-                                  className="w-full sm:w-auto text-xs"
+                                  className="flex-1 sm:flex-none text-xs"
                                 >
-                                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                                  <span className="hidden sm:inline">Edit</span>
+                                  <Edit className="h-3.5 w-3.5 mr-1.5" />
+                                  Edit
                                 </Button>
                                 <Button 
                                   size="sm" 
                                   variant="default"
                                   onClick={() => handleToggleUniversityStatus(uni)}
                                   disabled={saving}
-                                  className="w-full sm:w-auto text-xs"
+                                  className="flex-1 sm:flex-none text-xs"
                                 >
-                                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                                  <span className="hidden sm:inline">Add to Competing</span>
-                                  <span className="sm:hidden">Add</span>
+                                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                                  Add
                                 </Button>
                               </div>
                             </CardContent>

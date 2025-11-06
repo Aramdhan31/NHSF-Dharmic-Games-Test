@@ -270,6 +270,12 @@ export default function AdminDashboardPage() {
           contactEmail: doc.data().contactEmail || '',
           contactPhone: doc.data().contactPhone || '',
           contactRole: doc.data().contactRole || '',
+          contacts: doc.data().contacts || (doc.data().contactPerson ? [{
+            contactPerson: doc.data().contactPerson,
+            contactEmail: doc.data().contactEmail,
+            contactPhone: doc.data().contactPhone,
+            contactRole: doc.data().contactRole
+          }] : []),
           members: doc.data().members || 0,
           wins: doc.data().wins || 0,
           losses: doc.data().losses || 0,
@@ -308,10 +314,16 @@ export default function AdminDashboardPage() {
               status: 'competing',
               isStatic: true, // Flag to indicate this is from static code
               email: '', // May not have email in static data
-              contactPerson: '',
-              contactEmail: '',
-              contactPhone: '',
-              contactRole: '',
+              contactPerson: staticUni.contactPerson || '',
+              contactEmail: staticUni.contactEmail || '',
+              contactPhone: staticUni.contactPhone || '',
+              contactRole: staticUni.contactRole || '',
+              contacts: staticUni.contacts || (staticUni.contactPerson ? [{
+                contactPerson: staticUni.contactPerson,
+                contactEmail: staticUni.contactEmail,
+                contactPhone: staticUni.contactPhone,
+                contactRole: staticUni.contactRole
+              }] : []),
               approximateTotal: staticUni.approximateTotal
             });
             existingNames.add(nameLower);
@@ -331,6 +343,17 @@ export default function AdminDashboardPage() {
                   ? existing.sports
                   : (staticUni.sports || existing.sports || []),
                 teamInfo: existing.teamInfo || staticUni.teamInfo || {},
+                // Merge contacts from static if available (prioritize static contacts)
+                contacts: staticUni.contacts && staticUni.contacts.length > 0 
+                  ? staticUni.contacts 
+                  : (existing.contacts && existing.contacts.length > 0 
+                    ? existing.contacts 
+                    : (staticUni.contactPerson ? [{
+                        contactPerson: staticUni.contactPerson,
+                        contactEmail: staticUni.contactEmail,
+                        contactPhone: staticUni.contactPhone,
+                        contactRole: staticUni.contactRole
+                      }] : [])),
                 // Merge approximateTotal from static if available
                 approximateTotal: existing.approximateTotal || staticUni.approximateTotal
               };

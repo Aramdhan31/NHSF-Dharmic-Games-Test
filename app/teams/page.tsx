@@ -103,27 +103,57 @@ export const universities = [
     members: 0, wins: 0, losses: 0, points: 0, description: "Royal Holloway Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "54", name: "Cardiff", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },
-    contactPerson: "", contactRole: "", contactEmail: "", contactPhone: "",
+    contactPerson: "Aryan Jain", contactRole: "President", contactEmail: "Nhsfcardiff@gmail.com", contactPhone: "07419741154",
+    contacts: [
+      { contactPerson: "Aryan Jain", contactRole: "President", contactEmail: "Nhsfcardiff@gmail.com", contactPhone: "07419741154" },
+      { contactPerson: "Aryan Jain", contactRole: "2nd POC", contactEmail: "Aryanjainuk@gmail.com", contactPhone: "+44 7488 320075" }
+    ],
+    approximateTotal: 135, // Approx £135 (Badminton A £18 + Badminton B £18 + Kho Kho A £33 + Netball A £33 + Football A £33)
     members: 0, wins: 0, losses: 0, points: 0, description: "Cardiff Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "52", name: "Bristol", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: null } },
-    contactPerson: "", contactRole: "", contactEmail: "", contactPhone: "",
+    contactPerson: "Rishi Amin", contactRole: "Co-President", contactEmail: "Nhsfbristol@gmail.com", contactPhone: "07435665560",
+    contacts: [
+      { contactPerson: "Rishi Amin", contactRole: "Co-President", contactEmail: "Nhsfbristol@gmail.com", contactPhone: "07435665560" },
+      { contactPerson: "2nd POC", contactRole: "2nd POC", contactEmail: "qs22114@bristol.ac.uk", contactPhone: "+44 7510 329586" }
+    ],
+    approximateTotal: 135, // Approx £135 (Badminton A £18 + Badminton B £18 + Kho Kho A £33 + Kho Kho B £33 + Football A £33)
     members: 0, wins: 0, losses: 0, points: 0, description: "Bristol Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "60", name: "Brighton & Sussex", zone: "LZ+SZ", sports: ["Badminton", "Football"],
     teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null } },
-    contactPerson: "", contactRole: "", contactEmail: "", contactPhone: "",
+    contactPerson: "Mansi Shah", contactRole: "President", contactEmail: "mansiben.shah2005@gmail.com", contactPhone: "07488551933",
+    contacts: [
+      { contactPerson: "Mansi Shah", contactRole: "President", contactEmail: "mansiben.shah2005@gmail.com", contactPhone: "07488551933" },
+      { contactPerson: "2nd POC", contactRole: "2nd POC", contactEmail: "yj250@sussex.ac.uk", contactPhone: "+91 99994 06000" }
+    ],
+    approximateTotal: 51, // Approx £51 (Badminton A £18 + Football A £33)
     members: 0, wins: 0, losses: 0, points: 0, description: "Brighton & Sussex Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "61", name: "Reading", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null } },
-    contactPerson: "", contactRole: "", contactEmail: "", contactPhone: "",
+    contactPerson: "Meera Malaiya", contactRole: "President", contactEmail: "meeramalaiya@gmail.com", contactPhone: "07436377072",
+    contacts: [
+      { contactPerson: "Meera Malaiya", contactRole: "President", contactEmail: "meeramalaiya@gmail.com", contactPhone: "07436377072" },
+      { contactPerson: "2nd POC", contactRole: "2nd POC", contactEmail: "aravindnachiappan@gmail.com", contactPhone: "07442426846" }
+    ],
+    approximateTotal: 84, // Approx £84 (Badminton A £18 + Kho Kho A £33 + Football A £33)
     members: 0, wins: 0, losses: 0, points: 0, description: "Reading Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "62", name: "Bath", zone: "LZ+SZ", sports: ["Badminton", "Football"],
     teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null } },
-    contactPerson: "", contactRole: "", contactEmail: "", contactPhone: "",
+    contactPerson: "Tanay", contactRole: "Sports", contactEmail: "Tjr72@bath.ac.uk", contactPhone: "07876660950",
+    contacts: [
+      { contactPerson: "Tanay", contactRole: "Sports", contactEmail: "Tjr72@bath.ac.uk", contactPhone: "07876660950" },
+      { contactPerson: "2nd POC", contactRole: "2nd POC", contactEmail: "krutagnasuresh@gmail.com", contactPhone: "07721057836" }
+    ],
+    approximateTotal: 51, // Approx £51 (Badminton A £18 + Football A £33)
     members: 0, wins: 0, losses: 0, points: 0, description: "Bath Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "63", name: "Southampton", zone: "LZ+SZ", sports: ["Football"],
     teamInfo: { "Football": { teamA: { isOpen: true }, teamB: null } },
-    contactPerson: "", contactRole: "", contactEmail: "", contactPhone: "",
+    contactPerson: "Abhimanyu Tyagi", contactRole: "Football Rep", contactEmail: "at16g24@soton.ac.uk", contactPhone: "0795729652",
+    contacts: [
+      { contactPerson: "Abhimanyu Tyagi", contactRole: "Football Rep", contactEmail: "at16g24@soton.ac.uk", contactPhone: "0795729652" },
+      { contactPerson: "2nd POC", contactRole: "2nd POC", contactEmail: "", contactPhone: "07421520335" }
+    ],
+    approximateTotal: 33, // Approx £33 (Football A £33)
     members: 0, wins: 0, losses: 0, points: 0, description: "Southampton Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
 ]
 

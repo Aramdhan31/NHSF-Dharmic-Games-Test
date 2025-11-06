@@ -31,7 +31,6 @@ interface LeagueEntry {
       points: number;
     };
   };
-  form: string; // Last 5 matches: W, D, L, etc.
   change: 'up' | 'down' | 'same';
   changeValue?: number;
   isMultiZone?: boolean; // Flag to show both zone colors
@@ -114,7 +113,6 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
                 totalDraws: combinedDraws,
                 totalPoints: combinedPoints,
                 sportsBreakdown: { ...(kclLZ.sportsBreakdown || {}), ...(kclNZ.sportsBreakdown || {}) },
-                form: kclLZ.form || '-----',
                 change: 'same' as const,
                 changeValue: 0,
                 position: 0,
@@ -432,7 +430,6 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
             totalDraws: totalDraws,
             totalPoints: totalPoints,
             sportsBreakdown: uni.sportsBreakdown || {},
-            form: uni.form || '-----', // Default form string
             change: 'same' as const,
             changeValue: 0,
             position: 0 // Will be set after sorting
@@ -465,7 +462,6 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
             totalDraws: totalDraws,
             totalPoints: totalPoints,
             sportsBreakdown: uni.sportsBreakdown || {},
-            form: uni.form || '-----',
             change: 'same' as const,
             changeValue: 0,
             position: 0
@@ -529,16 +525,6 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
     return zoneColors[zone] || 'bg-gray-500';
   };
 
-  const getFormColor = (form: string) => {
-    if (!form || form === '-----') return 'text-gray-400';
-    const wins = (form.match(/W/g) || []).length;
-    const draws = (form.match(/D/g) || []).length;
-    const losses = (form.match(/L/g) || []).length;
-    
-    if (wins > losses) return 'text-green-600';
-    if (losses > wins) return 'text-red-600';
-    return 'text-yellow-600';
-  };
 
   // Filter entries first (but don't filter KCL yet - we'll handle it separately)
   let filteredEntries = (entries || []).filter(entry => {
@@ -583,8 +569,7 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
         totalDraws: combinedDraws,
         totalPoints: combinedPoints,
         sportsBreakdown: { ...(kclLZ.sportsBreakdown || {}), ...(kclNZ.sportsBreakdown || {}) },
-        form: kclLZ.form || '-----',
-        change: 'same' as const,
+                change: 'same' as const,
         changeValue: 0,
         position: 0,
         isMultiZone: true,
@@ -785,7 +770,6 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
                   <th className="text-center py-3 px-4 font-bold text-orange-600 bg-orange-50 border-l-2 border-orange-300">
                     Points ⭐
                   </th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Form</th>
                 </tr>
               </thead>
               <tbody>
@@ -846,11 +830,6 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
                     <td className="py-4 px-4 text-center bg-orange-50 border-l-2 border-orange-300">
                       <span className="text-2xl font-bold text-orange-600">{entry.totalPoints}</span>
                       <div className="text-xs text-orange-500 mt-1">Total</div>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <span className={`font-mono text-sm ${getFormColor(entry.form)}`}>
-                        {entry.form}
-                      </span>
                     </td>
                   </tr>
                 ))}

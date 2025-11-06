@@ -554,30 +554,44 @@ function UniversityContactCard({
                 </div>
               </div>
             ) : (
-              <div className="space-y-2">
-                {university.contactPerson && (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <User className="h-4 w-4 text-gray-400" />
-                    <span>{university.contactPerson}</span>
-                    {university.contactRole && (
-                      <span className="text-gray-500">({university.contactRole})</span>
+              <div className="space-y-3">
+                {(university.contactPerson || university.contactEmail || university.contactPhone) ? (
+                  <>
+                    {university.contactPerson && (
+                      <div className="flex items-center space-x-2 text-sm text-gray-700">
+                        <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{university.contactPerson}</span>
+                          {university.contactRole && (
+                            <span className="text-gray-500 text-xs">({university.contactRole})</span>
+                          )}
+                        </div>
+                      </div>
                     )}
+                    {university.contactEmail && (
+                      <div className="flex items-center space-x-2 text-sm text-gray-700">
+                        <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <a href={`mailto:${university.contactEmail}`} className="text-blue-600 hover:underline">
+                          {university.contactEmail}
+                        </a>
+                      </div>
+                    )}
+                    {university.contactPhone && (
+                      <div className="flex items-center space-x-2 text-sm text-gray-700">
+                        <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <a href={`tel:${university.contactPhone}`} className="text-blue-600 hover:underline">
+                          {university.contactPhone}
+                        </a>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-sm text-gray-500 flex items-center space-x-2">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>No contact details available. {isAdmin && 'Click Edit to add contact information.'}</span>
+                    </p>
                   </div>
-                )}
-                {university.contactEmail && (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Mail className="h-4 w-4 text-gray-400" />
-                    <span>{university.contactEmail}</span>
-                  </div>
-                )}
-                {university.contactPhone && (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Phone className="h-4 w-4 text-gray-400" />
-                    <span>{university.contactPhone}</span>
-                  </div>
-                )}
-                {!university.contactPerson && !university.contactEmail && !university.contactPhone && (
-                  <p className="text-sm text-gray-400">No contact details available</p>
                 )}
               </div>
             )}

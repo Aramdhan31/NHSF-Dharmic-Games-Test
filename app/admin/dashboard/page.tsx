@@ -83,7 +83,6 @@ import {
   Wifi,
   WifiOff,
   Menu,
-  DollarSign,
   User
 } from "lucide-react"
 
@@ -1622,7 +1621,7 @@ export default function AdminDashboardPage() {
                         <Card className="lg:col-span-2">
                           <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                              <DollarSign className="h-5 w-5" />
+                              <span className="text-lg">£</span>
                               Payment & Confirmation (Per Team)
                             </CardTitle>
                           </CardHeader>
@@ -1632,7 +1631,7 @@ export default function AdminDashboardPage() {
                               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
-                                    <DollarSign className="h-4 w-4 text-blue-600" />
+                                    <span className="text-blue-600 font-bold">£</span>
                                     <span className="text-sm font-medium text-blue-900">Approximate Total:</span>
                                   </div>
                                   <span className="text-lg font-bold text-blue-700">£{selectedUniversity.approximateTotal}</span>

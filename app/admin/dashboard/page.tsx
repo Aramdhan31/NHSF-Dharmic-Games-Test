@@ -1438,18 +1438,18 @@ export default function AdminDashboardPage() {
                 </div>
                 
                 {/* Show competing universities first, then others */}
-                <div className="space-y-6">
-                  {/* Competing Universities Section */}
+                <div className="space-y-8">
+                  {/* LZ+SZ Competing Universities Section */}
                   <div>
                     <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center space-x-2 flex-wrap">
                       <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
-                      <span>Competing Universities</span>
-                      <Badge className="ml-2 text-xs">
+                      <span className="bg-gradient-to-r from-blue-500 to-yellow-500 bg-clip-text text-transparent">London & South Zone (LZ+SZ)</span>
+                      <Badge className="ml-2 text-xs bg-gradient-to-r from-blue-500 to-yellow-500">
                         {universities.filter(uni => {
                           const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
-                          const matchesZone = selectedZone === 'ALL' || uni.zone === selectedZone || uni.region === selectedZone
+                          const matchesZone = selectedZone === 'ALL' || selectedZone === 'LZ+SZ' || uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ'
                           const isCompeting = uni.isCompeting === true || uni.status === 'competing'
-                          return matchesSearch && matchesZone && isCompeting
+                          return matchesSearch && matchesZone && isCompeting && (uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ')
                         }).length}
                       </Badge>
                     </h3>
@@ -1457,9 +1457,134 @@ export default function AdminDashboardPage() {
                       {universities
                         .filter(uni => {
                           const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
-                          const matchesZone = selectedZone === 'ALL' || uni.zone === selectedZone || uni.region === selectedZone
+                          const matchesZone = selectedZone === 'ALL' || selectedZone === 'LZ+SZ' || uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ'
                           const isCompeting = uni.isCompeting === true || uni.status === 'competing'
-                          return matchesSearch && matchesZone && isCompeting
+                          return matchesSearch && matchesZone && isCompeting && (uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ')
+                        })
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((uni, index) => (
+                    <Card key={uni.id || `uni-${index}`} className="hover:shadow-md transition-all border border-gray-200">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <CardTitle className="text-lg font-semibold text-gray-900">{uni.name}</CardTitle>
+                          <div className="flex flex-wrap gap-2 flex-shrink-0">
+                            <Badge variant="outline" className="text-xs font-medium">{uni.zone}</Badge>
+                            <Badge variant={uni.isCompeting ? "default" : "secondary"} className="text-xs font-medium">
+                              {uni.isCompeting ? "Competing" : "Not Competing"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {uni.email && (
+                          <div className="flex items-center gap-2 text-sm text-gray-700">
+                            <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                            <span className="truncate">{uni.email}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-sm text-gray-700">
+                          <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <span>{uni.zone}</span>
+                        </div>
+                        <div className="flex items-start gap-2 text-sm text-gray-700">
+                          <Gamepad2 className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <span className="line-clamp-2">{uni.sports?.join(', ') || 'No sports'}</span>
+                        </div>
+                        {/* Payment/Confirmation Fields */}
+                        <div className="pt-2 border-t border-gray-100 space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Confirmed?</span>
+                            <Checkbox
+                              checked={uni.confirmed || false}
+                              onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'confirmed', checked)}
+                              disabled={saving}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Total:</span>
+                            <Input
+                              type="number"
+                              value={uni.total || ''}
+                              onChange={(e) => handleUpdatePaymentField(uni.id, 'total', e.target.value)}
+                              placeholder="0.00"
+                              className="w-24 h-7 text-xs"
+                              disabled={saving}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Payment Link Sent?</span>
+                            <Checkbox
+                              checked={uni.paymentLinkSent || false}
+                              onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paymentLinkSent', checked)}
+                              disabled={saving}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Paid?</span>
+                            <Checkbox
+                              checked={uni.paid || false}
+                              onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paid', checked)}
+                              disabled={saving}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-2 border-t border-gray-100">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setEditingUniversity(uni)}
+                            className="flex-1 sm:flex-none text-xs"
+                          >
+                            <Edit className="h-3.5 w-3.5 mr-1.5" />
+                            Edit
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant={uni.isCompeting ? "destructive" : "default"}
+                            onClick={() => handleToggleUniversityStatus(uni)}
+                            disabled={saving}
+                            className="flex-1 sm:flex-none text-xs"
+                          >
+                            {uni.isCompeting ? (
+                              <>
+                                <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                                Remove
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                                Add
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* NZ+CZ Competing Universities Section */}
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center space-x-2 flex-wrap">
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
+                      <span className="bg-gradient-to-r from-red-500 to-green-500 bg-clip-text text-transparent">North & Central Zone (NZ+CZ)</span>
+                      <Badge className="ml-2 text-xs bg-gradient-to-r from-red-500 to-green-500">
+                        {universities.filter(uni => {
+                          const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
+                          const matchesZone = selectedZone === 'ALL' || selectedZone === 'NZ+CZ' || uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ'
+                          const isCompeting = uni.isCompeting === true || uni.status === 'competing'
+                          return matchesSearch && matchesZone && isCompeting && (uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ')
+                        }).length}
+                      </Badge>
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                      {universities
+                        .filter(uni => {
+                          const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
+                          const matchesZone = selectedZone === 'ALL' || selectedZone === 'NZ+CZ' || uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ'
+                          const isCompeting = uni.isCompeting === true || uni.status === 'competing'
+                          return matchesSearch && matchesZone && isCompeting && (uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ')
                         })
                         .sort((a, b) => a.name.localeCompare(b.name))
                     .map((uni, index) => (
@@ -1566,16 +1691,132 @@ export default function AdminDashboardPage() {
 
                   {/* Non-Competing Universities Section - Only shown when toggle is on */}
                   {showNonCompeting && (
+                    <div className="space-y-6">
+                      {/* LZ+SZ Non-Competing */}
+                      <div>
+                        <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center space-x-2 flex-wrap">
+                          <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                          <span className="bg-gradient-to-r from-blue-500 to-yellow-500 bg-clip-text text-transparent">LZ+SZ - Other Universities</span>
+                          <Badge variant="secondary" className="ml-2 text-xs">
+                            {universities.filter(uni => {
+                              const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
+                              const matchesZone = selectedZone === 'ALL' || selectedZone === 'LZ+SZ' || uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ'
+                              const isCompeting = uni.isCompeting === true || uni.status === 'competing'
+                              return matchesSearch && matchesZone && !isCompeting && (uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ')
+                            }).length}
+                          </Badge>
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                          {universities
+                            .filter(uni => {
+                              const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
+                              const matchesZone = selectedZone === 'ALL' || selectedZone === 'LZ+SZ' || uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ'
+                              const isCompeting = uni.isCompeting === true || uni.status === 'competing'
+                              return matchesSearch && matchesZone && !isCompeting && (uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ')
+                            })
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((uni, index) => (
+                          <Card key={uni.id || `uni-${index}`} className="hover:shadow-md transition-all border border-gray-200 opacity-75">
+                            <CardHeader className="pb-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <CardTitle className="text-lg font-semibold text-gray-900">{uni.name}</CardTitle>
+                                <div className="flex flex-wrap gap-2 flex-shrink-0">
+                                  <Badge variant="outline" className="text-xs font-medium">{uni.zone}</Badge>
+                                  <Badge variant="secondary" className="text-xs font-medium">Not Competing</Badge>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              {uni.email && (
+                                <div className="flex items-center gap-2 text-sm text-gray-700">
+                                  <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate">{uni.email}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 text-sm text-gray-700">
+                                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                <span>{uni.zone}</span>
+                              </div>
+                              <div className="flex items-start gap-2 text-sm text-gray-700">
+                                <Gamepad2 className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                                <span className="line-clamp-2">{uni.sports?.join(', ') || 'No sports'}</span>
+                              </div>
+                              {/* Payment/Confirmation Fields */}
+                              <div className="pt-2 border-t border-gray-100 space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600">Confirmed?</span>
+                                  <Checkbox
+                                    checked={uni.confirmed || false}
+                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'confirmed', checked)}
+                                    disabled={saving}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600">Total:</span>
+                                  <Input
+                                    type="number"
+                                    value={uni.total || ''}
+                                    onChange={(e) => handleUpdatePaymentField(uni.id, 'total', e.target.value)}
+                                    placeholder="0.00"
+                                    className="w-24 h-7 text-xs"
+                                    disabled={saving}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600">Payment Link Sent?</span>
+                                  <Checkbox
+                                    checked={uni.paymentLinkSent || false}
+                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paymentLinkSent', checked)}
+                                    disabled={saving}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600">Paid?</span>
+                                  <Checkbox
+                                    checked={uni.paid || false}
+                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paid', checked)}
+                                    disabled={saving}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex gap-2 pt-2 border-t border-gray-100">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => setEditingUniversity(uni)}
+                                  className="flex-1 sm:flex-none text-xs"
+                                >
+                                  <Edit className="h-3.5 w-3.5 mr-1.5" />
+                                  Edit
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="default"
+                                  onClick={() => handleToggleUniversityStatus(uni)}
+                                  disabled={saving}
+                                  className="flex-1 sm:flex-none text-xs"
+                                >
+                                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                                  Add
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* NZ+CZ Non-Competing */}
                     <div>
                       <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center space-x-2 flex-wrap">
                         <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                        <span>Other Universities</span>
+                        <span className="bg-gradient-to-r from-red-500 to-green-500 bg-clip-text text-transparent">NZ+CZ - Other Universities</span>
                         <Badge variant="secondary" className="ml-2 text-xs">
                           {universities.filter(uni => {
                             const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
-                            const matchesZone = selectedZone === 'ALL' || uni.zone === selectedZone || uni.region === selectedZone
+                            const matchesZone = selectedZone === 'ALL' || selectedZone === 'NZ+CZ' || uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ'
                             const isCompeting = uni.isCompeting === true || uni.status === 'competing'
-                            return matchesSearch && matchesZone && !isCompeting
+                            return matchesSearch && matchesZone && !isCompeting && (uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ')
                           }).length}
                         </Badge>
                       </h3>
@@ -1583,9 +1824,9 @@ export default function AdminDashboardPage() {
                         {universities
                           .filter(uni => {
                             const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
-                            const matchesZone = selectedZone === 'ALL' || uni.zone === selectedZone || uni.region === selectedZone
+                            const matchesZone = selectedZone === 'ALL' || selectedZone === 'NZ+CZ' || uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ'
                             const isCompeting = uni.isCompeting === true || uni.status === 'competing'
-                            return matchesSearch && matchesZone && !isCompeting
+                            return matchesSearch && matchesZone && !isCompeting && (uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ')
                           })
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((uni, index) => (

@@ -990,7 +990,7 @@ export default function AdminDashboardPage() {
 
   // Calculate stats
   const stats = {
-    totalUniversities: universities.length,
+    totalUniversities: universities.filter(uni => uni.isCompeting === true || uni.status === 'competing').length, // Only competing universities
     totalPlayers: players.length,
     totalMatches: matches.length,
     pendingRequests: adminRequests.filter(req => req.status === 'pending').length,
@@ -1169,17 +1169,19 @@ export default function AdminDashboardPage() {
 
             {/* Main Content Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-              <TabsList className={`grid w-full overflow-x-auto ${adminCheck?.isSuperAdmin ? 'grid-cols-9' : 'grid-cols-7'} text-xs sm:text-sm`}>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="universities">Universities</TabsTrigger>
-                <TabsTrigger value="university-contacts">Contacts</TabsTrigger>
-                <TabsTrigger value="players">Players</TabsTrigger>
-                <TabsTrigger value="matches">Matches</TabsTrigger>
-                <TabsTrigger value="scoring">Scoring</TabsTrigger>
-                <TabsTrigger value="live-scores">Live Scores</TabsTrigger>
-                {adminCheck?.isSuperAdmin && <TabsTrigger value="admin-requests">Admin Requests</TabsTrigger>}
-                {adminCheck?.isSuperAdmin && <TabsTrigger value="settings">Settings</TabsTrigger>}
-              </TabsList>
+              <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                <TabsList className={`inline-flex w-full min-w-max ${adminCheck?.isSuperAdmin ? 'lg:grid lg:grid-cols-9' : 'lg:grid lg:grid-cols-7'} text-xs sm:text-sm`}>
+                  <TabsTrigger value="overview" className="whitespace-nowrap">Overview</TabsTrigger>
+                  <TabsTrigger value="universities" className="whitespace-nowrap">Universities</TabsTrigger>
+                  <TabsTrigger value="university-contacts" className="whitespace-nowrap">Contacts</TabsTrigger>
+                  <TabsTrigger value="players" className="whitespace-nowrap">Players</TabsTrigger>
+                  <TabsTrigger value="matches" className="whitespace-nowrap">Matches</TabsTrigger>
+                  <TabsTrigger value="scoring" className="whitespace-nowrap">Scoring</TabsTrigger>
+                  <TabsTrigger value="live-scores" className="whitespace-nowrap">Live Scores</TabsTrigger>
+                  {adminCheck?.isSuperAdmin && <TabsTrigger value="admin-requests" className="whitespace-nowrap">Requests</TabsTrigger>}
+                  {adminCheck?.isSuperAdmin && <TabsTrigger value="settings" className="whitespace-nowrap">Settings</TabsTrigger>}
+                </TabsList>
+              </div>
 
               {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6">
@@ -1192,7 +1194,7 @@ export default function AdminDashboardPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">{stats.totalUniversities}</div>
-                      <p className="text-xs text-orange-100">Registered institutions</p>
+                      <p className="text-xs text-orange-100">Competing universities</p>
                     </CardContent>
                   </Card>
 
@@ -1314,12 +1316,13 @@ export default function AdminDashboardPage() {
               </TabsContent>
 
               {/* Universities Tab */}
-              <TabsContent value="universities" className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">Universities</h2>
-                  <Button onClick={() => setShowAddUniversity(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add University
+              <TabsContent value="universities" className="space-y-4 sm:space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                  <h2 className="text-xl sm:text-2xl font-bold">Universities</h2>
+                  <Button onClick={() => setShowAddUniversity(true)} size="sm" className="w-full sm:w-auto">
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Add University</span>
+                    <span className="sm:hidden">Add</span>
                   </Button>
                 </div>
                 
@@ -1392,62 +1395,64 @@ export default function AdminDashboardPage() {
                         .sort((a, b) => a.name.localeCompare(b.name))
                     .map((uni, index) => (
                     <Card key={uni.id || `uni-${index}`} className="hover:shadow-lg transition-shadow">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">{uni.name}</CardTitle>
-                          <div className="flex space-x-2">
-                            <Badge variant="outline">{uni.zone}</Badge>
-                            <Badge variant={uni.isCompeting ? "default" : "secondary"}>
+                      <CardHeader className="pb-3">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                          <CardTitle className="text-base sm:text-lg">{uni.name}</CardTitle>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline" className="text-xs">{uni.zone}</Badge>
+                            <Badge variant={uni.isCompeting ? "default" : "secondary"} className="text-xs">
                               {uni.isCompeting ? "Competing" : "Not Competing"}
                             </Badge>
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
-                            <Mail className="h-4 w-4" />
-                            <span>{uni.email}</span>
-                          </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
-                            <MapPin className="h-4 w-4" />
+                      <CardContent className="pt-0">
+                        <div className="space-y-2 mb-4">
+                          {uni.email && (
+                            <div className="flex items-start space-x-2 text-xs sm:text-sm text-gray-600">
+                              <Mail className="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
+                              <span className="break-words">{uni.email}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600">
+                            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                             <span>{uni.zone}</span>
                           </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
-                            <Gamepad2 className="h-4 w-4" />
-                            <span>{uni.sports?.join(', ') || 'No sports'}</span>
+                          <div className="flex items-start space-x-2 text-xs sm:text-sm text-gray-600">
+                            <Gamepad2 className="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
+                            <span className="break-words">{uni.sports?.join(', ') || 'No sports'}</span>
                           </div>
                         </div>
-                        <div className="flex space-x-2 mt-4">
+                        <div className="flex flex-col sm:flex-row gap-2 mt-4">
                           <Button 
                             size="sm" 
                             variant="outline"
                             onClick={() => setEditingUniversity(uni)}
+                            className="w-full sm:w-auto text-xs"
                           >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
+                            <Edit className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Edit</span>
                           </Button>
                           <Button 
                             size="sm" 
                             variant={uni.isCompeting ? "destructive" : "default"}
                             onClick={() => handleToggleUniversityStatus(uni)}
                             disabled={saving}
+                            className="w-full sm:w-auto text-xs"
                           >
                             {uni.isCompeting ? (
                               <>
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Remove from Competing
+                                <XCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Remove from Competing</span>
+                                <span className="sm:hidden">Remove</span>
                               </>
                             ) : (
                               <>
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Add to Competing
+                                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Add to Competing</span>
+                                <span className="sm:hidden">Add</span>
                               </>
                             )}
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
                           </Button>
                         </div>
                       </CardContent>

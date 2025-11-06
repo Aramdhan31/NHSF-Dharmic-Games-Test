@@ -362,11 +362,46 @@ function TeamsPageContent() {
     return () => unsubscribe()
   }, [])
 
+  // ✅ Merge static universities with Firebase data
+  // Get static competing universities that match the selected tournament
+  const staticCompetingUnis = universities.filter(uni => {
+    if (!uni.isCompeting) return false
+    if (selectedTournament === "all") return true
+    return uni.zone === selectedTournament
+  })
+  
+  // Create a map of existing universities by name for deduplication
+  const existingUniNames = new Set(universitiesData.map(uni => uni.name.toLowerCase()))
+  
+  // Add static universities that aren't already in universitiesData
+  const staticUnisToAdd = staticCompetingUnis
+    .filter(staticUni => !existingUniNames.has(staticUni.name.toLowerCase()))
+    .map(staticUni => ({
+      id: staticUni.id || `static-${staticUni.name.toLowerCase().replace(/\s+/g, '-')}`,
+      name: staticUni.name,
+      zone: staticUni.zone,
+      sports: staticUni.sports || [],
+      teamInfo: staticUni.teamInfo || {},
+      members: staticUni.members || 0,
+      wins: staticUni.wins || 0,
+      losses: staticUni.losses || 0,
+      points: staticUni.points || 0,
+      description: staticUni.description || `${staticUni.name} Hindu Society`,
+      tournamentDate: staticUni.tournamentDate,
+      isCompeting: true,
+      status: 'competing',
+      isSchool: (staticUni as any).isSchool || false,
+      isRegistered: false
+    }))
+  
+  // Combine Firebase data with static universities
+  const allUniversities = [...universitiesData, ...staticUnisToAdd]
+  
   // ✅ Automatically sort alphabetically by name
   const filteredUniversities = (
     selectedTournament === "all"
-      ? universitiesData
-      : universitiesData.filter((uni) => uni.zone === selectedTournament)
+      ? allUniversities
+      : allUniversities.filter((uni) => uni.zone === selectedTournament)
   ).sort((a, b) => a.name.localeCompare(b.name))
 
   // Count universities that are actually competing (based on isCompeting field or status)

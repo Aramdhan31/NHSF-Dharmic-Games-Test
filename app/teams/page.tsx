@@ -625,10 +625,6 @@ function TeamsPageContent() {
                     <div className="space-y-2 text-sm mb-4">
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span><strong>NHSF Affiliated Universities:</strong> 23 universities</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         <span><strong>Venue:</strong> {venueInfo['NZ+CZ'].name}</span>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -938,41 +934,6 @@ function TeamsPageContent() {
                 </div>
               )}
 
-              {/* Non-Competing Universities Section - Hidden for LZ+SZ */}
-              {selectedTournament !== "LZ+SZ" && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                    <Users className="w-6 h-6 text-gray-600 mr-2" />
-                    Affiliated Universities ({filteredUniversities.length - competingUniversitiesList.length})
-                  </h2>
-                  <Badge className="bg-gray-100 text-gray-800 border-gray-300">
-                    Affiliated
-                  </Badge>
-                </div>
-                {(filteredUniversities.length - competingUniversitiesList.length) > 0 ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
-                    {filteredUniversities
-                      .filter(uni => !competingUniversitiesList.includes(uni))
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((university) => (
-                        <UniversityCard
-                          key={university.id}
-                          university={university}
-                          onViewDetails={handleViewDetails}
-                          showAdminControls={false}
-                        />
-                      ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg">
-                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">All registered universities are competing</p>
-                    <p className="text-sm text-gray-500 mt-2">Great participation!</p>
-                  </div>
-                )}
-              </div>
-              )}
             </div>
           )}
 

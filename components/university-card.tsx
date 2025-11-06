@@ -248,31 +248,33 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
                 </span>
               </div>
               <div className="text-sm text-blue-600 pl-6 space-y-2">
-                {contactsList.map((contact, index) => (
-                  <div key={index} className="space-y-1">
-                    {contact.contactPerson && (
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{contact.contactPerson}</span>
-                        {contact.contactRole && (
-                          <span className="text-blue-500">({contact.contactRole})</span>
-                        )}
-                      </div>
-                    )}
-                    {contact.contactEmail && (
-                      <div className="text-xs text-blue-500">
-                        {contact.contactEmail}
-                      </div>
-                    )}
-                    {contact.contactPhone && (
-                      <div className="text-xs text-blue-500">
-                        {contact.contactPhone}
-                      </div>
-                    )}
-                    {contactsList.length > 1 && index < contactsList.length - 1 && (
-                      <div className="border-t border-blue-200 my-2"></div>
-                    )}
-                  </div>
-                ))}
+                {contactsList.map((contact, index) => {
+                  // Extract sport oversight from role (e.g., "Football sports coordinator" -> "Football")
+                  const role = contact.contactRole || '';
+                  const sportMatch = role.match(/(Football|Badminton|Netball|Kho Kho|Kabaddi)/i);
+                  const sportOversight = sportMatch ? sportMatch[1] : null;
+                  
+                  return (
+                    <div key={index} className="space-y-1">
+                      {contact.contactPerson && (
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">{contact.contactPerson}</span>
+                          {contact.contactRole && (
+                            <span className="text-blue-500">
+                              ({contact.contactRole})
+                            </span>
+                          )}
+                          {sportOversight && (
+                            <span className="text-blue-600 text-xs">(oversees {sportOversight})</span>
+                          )}
+                        </div>
+                      )}
+                      {contactsList.length > 1 && index < contactsList.length - 1 && (
+                        <div className="border-t border-blue-200 my-2"></div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );

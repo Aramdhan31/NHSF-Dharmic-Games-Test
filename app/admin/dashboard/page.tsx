@@ -267,6 +267,10 @@ export default function AdminDashboardPage() {
           zone: doc.data().zone || "Unknown",
           sports: doc.data().sports || [],
           teamInfo: doc.data().teamInfo || {},
+          teamPayments: doc.data().teamPayments || {}, // Include teamPayments for real-time updates
+          confirmed: doc.data().confirmed || false, // Include confirmed for real-time updates
+          paymentLinkSent: doc.data().paymentLinkSent || false, // Include paymentLinkSent for real-time updates
+          paid: doc.data().paid || false, // Include paid for real-time updates
           contactPerson: doc.data().contactPerson || '',
           contactEmail: doc.data().contactEmail || '',
           contactPhone: doc.data().contactPhone || '',
@@ -305,6 +309,10 @@ export default function AdminDashboardPage() {
               zone: staticUni.zone,
               sports: staticUni.sports || [],
               teamInfo: staticUni.teamInfo || {},
+              teamPayments: {}, // Initialize empty teamPayments
+              confirmed: false, // Initialize payment fields
+              paymentLinkSent: false,
+              paid: false,
               members: staticUni.members || 0,
               wins: staticUni.wins || 0,
               losses: staticUni.losses || 0,
@@ -339,6 +347,11 @@ export default function AdminDashboardPage() {
                 ...existing,
                 isCompeting: true,
                 status: existing.status || 'competing',
+                // Preserve payment fields from Firebase (don't overwrite with static data)
+                teamPayments: existing.teamPayments || {},
+                confirmed: existing.confirmed !== undefined ? existing.confirmed : false,
+                paymentLinkSent: existing.paymentLinkSent !== undefined ? existing.paymentLinkSent : false,
+                paid: existing.paid !== undefined ? existing.paid : false,
                 // Merge sports and teamInfo from static if missing
                 sports: existing.sports && existing.sports.length > 0 && existing.sports[0] !== 'TBD'
                   ? existing.sports

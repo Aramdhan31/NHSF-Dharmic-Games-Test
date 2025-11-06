@@ -314,13 +314,14 @@ export default function AdminDashboardPage() {
           }
         });
         
-        // Ensure each university has a unique id
+        // Ensure each university has a unique id and sort alphabetically
         const universitiesWithIds = universitiesList.map((uni, index) => ({
           ...uni,
           id: uni.id || `uni-${index}-${Date.now()}`
         }))
+        universitiesWithIds.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
         setUniversities(universitiesWithIds)
-        console.log('📊 Universities updated in real-time:', universitiesWithIds.length)
+        console.log('📊 Universities updated in real-time (sorted alphabetically):', universitiesWithIds.length)
         console.log('📊 Competing universities:', universitiesWithIds.filter(u => u.isCompeting).length)
         console.log('📊 Sample competing universities:', universitiesWithIds.filter(u => u.isCompeting).slice(0, 3).map(u => u.name))
       } catch (error) {

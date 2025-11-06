@@ -257,7 +257,8 @@ export default function AdminDashboardPage() {
           description: doc.data().description || `${doc.data().name} Hindu Society`,
           tournamentDate: doc.data().date === "2025-11-22" ? "Nov 22, 2025" : "Nov 23, 2025",
           isCompeting: doc.data().status === "competing" || doc.data().isCompeting === true,
-          status: doc.data().status || "affiliated"
+          status: doc.data().status || "affiliated",
+          approximateTotal: doc.data().approximateTotal
         }))
         
         // Add competing universities from static code (teams page) that might not be in Firebase yet
@@ -290,7 +291,8 @@ export default function AdminDashboardPage() {
               contactPerson: '',
               contactEmail: '',
               contactPhone: '',
-              contactRole: ''
+              contactRole: '',
+              approximateTotal: staticUni.approximateTotal
             });
             existingNames.add(nameLower);
           } else {
@@ -308,7 +310,9 @@ export default function AdminDashboardPage() {
                 sports: existing.sports && existing.sports.length > 0 && existing.sports[0] !== 'TBD'
                   ? existing.sports
                   : (staticUni.sports || existing.sports || []),
-                teamInfo: existing.teamInfo || staticUni.teamInfo || {}
+                teamInfo: existing.teamInfo || staticUni.teamInfo || {},
+                // Merge approximateTotal from static if available
+                approximateTotal: existing.approximateTotal || staticUni.approximateTotal
               };
             }
           }
@@ -1557,6 +1561,18 @@ export default function AdminDashboardPage() {
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
+                            {/* Approximate Total */}
+                            {selectedUniversity.approximateTotal && (
+                              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4 text-blue-600" />
+                                    <span className="text-sm font-medium text-blue-900">Approximate Total:</span>
+                                  </div>
+                                  <span className="text-lg font-bold text-blue-700">£{selectedUniversity.approximateTotal}</span>
+                                </div>
+                              </div>
+                            )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {selectedUniversity.sports.map((sport: string) => {
                                 const teamPayment = selectedUniversity.teamPayments?.[sport] || {};
@@ -1758,6 +1774,14 @@ export default function AdminDashboardPage() {
                         </div>
                         {/* Payment/Confirmation Fields */}
                         <div className="pt-2 border-t border-gray-100 space-y-2">
+                          {uni.approximateTotal && (
+                            <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                              <div className="flex items-center justify-between">
+                                <span className="text-blue-700 font-medium">Approx. Total:</span>
+                                <span className="text-blue-900 font-bold">£{uni.approximateTotal}</span>
+                              </div>
+                            </div>
+                          )}
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-600">Confirmed?</span>
                             <Checkbox

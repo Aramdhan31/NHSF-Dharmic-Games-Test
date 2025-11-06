@@ -55,30 +55,37 @@ export const universities = [
   { id: "18", name: "KCL", zone: "LZ+SZ", sports: ["Badminton", "Football", "Kabaddi (men's)"], 
     teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
     contactPerson: "Riya Sareen", contactRole: "Head of Sports", contactEmail: "riyasareen06@gmail.com", contactPhone: "07790092007",
+    approximateTotal: 51, // Approx £51
     members: 0, wins: 0, losses: 0, points: 0, description: "KCL Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "57", name: "Essex", zone: "LZ+SZ", sports: ["Badminton", "Football"],
     teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null } },
     contactPerson: "Priya Patel", contactRole: "President", contactEmail: "Aakashsainixko@gmail.com", contactPhone: "07588 150649",
+    approximateTotal: 51, // Approx £51
     members: 0, wins: 0, losses: 0, points: 0, description: "Essex Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "31", name: "UCL", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },
     contactPerson: "Hanisha Patel", contactRole: "Sports Coordinator", contactEmail: "hanishapatel12@gmail.com", contactPhone: "07909369366",
+    approximateTotal: 84, // Approx £84
     members: 0, wins: 0, losses: 0, points: 0, description: "UCL Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "53", name: "Brunel", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Netball": { teamA: { isOpen: true }, teamB: null } },
     contactPerson: "Boshupriyo Bijan Mandal", contactRole: "Sport coordinator", contactEmail: "20boshu05@gmail.com", contactPhone: "07488275942",
+    approximateTotal: 84, // Approx £84
     members: 0, wins: 0, losses: 0, points: 0, description: "Brunel Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "20", name: "LSE", zone: "LZ+SZ", sports: ["Badminton", "Football", "Netball", "Kabaddi (men's)"],
     teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
     contactPerson: "Nikita Biju", contactRole: "Sport", contactEmail: "nikitabiju2006@gmail.com", contactPhone: "07914152044",
+    approximateTotal: 84, // Approx £84
     members: 0, wins: 0, losses: 0, points: 0, description: "LSE Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "24", name: "QMUL", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null } },
     contactPerson: "Thira Vekaria", contactRole: "Sports coordinator", contactEmail: "thira_v@hotmail.com", contactPhone: "07368131098",
+    approximateTotal: 51, // Approx £51
     members: 0, wins: 0, losses: 0, points: 0, description: "QMUL Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "55", name: "City", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },
     contactPerson: "Dhanisha Patel", contactRole: "President", contactEmail: "dhanisha.p155@gmail.com", contactPhone: "07401982997",
+    approximateTotal: 51, // Approx £51
     members: 0, wins: 0, losses: 0, points: 0, description: "City Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "17", name: "Imperial", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Kabaddi (men's)"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
@@ -87,10 +94,12 @@ export const universities = [
       { contactPerson: "Karthik Venkatesh", contactRole: "President", contactEmail: "karthik.venkatesh23@imperial.ac.uk", contactPhone: "07446108841" },
       { contactPerson: "Shiv Patel", contactRole: "Football sports coordinator", contactEmail: "Sp1824@ic.ac.uk", contactPhone: "07421727340" }
     ],
+    approximateTotal: 117, // Approx £117
     members: 0, wins: 0, losses: 0, points: 0, description: "Imperial Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "26", name: "Royal Holloway", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball", "Kabaddi (men's)"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: null }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null }, "Kabaddi (men's)": { teamA: { isOpen: true }, teamB: null } },
     contactPerson: "Varun Shivakumar", contactRole: "Events Coordinator", contactEmail: "varun6223@gmail.com", contactPhone: "07769413128",
+    approximateTotal: 117, // Approx £117
     members: 0, wins: 0, losses: 0, points: 0, description: "Royal Holloway Hindu Society", tournamentDate: "Nov 23, 2025", isCompeting: true },
   { id: "54", name: "Cardiff", zone: "LZ+SZ", sports: ["Kho Kho", "Badminton", "Football", "Netball"],
     teamInfo: { "Kho Kho": { teamA: { isOpen: true }, teamB: null }, "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: false } }, "Football": { teamA: { isOpen: true }, teamB: null }, "Netball": { teamA: { isOpen: true }, teamB: null } },

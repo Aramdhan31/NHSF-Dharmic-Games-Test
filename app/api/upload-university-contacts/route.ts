@@ -135,10 +135,12 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
     return -1;
   };
 
-  // Find university name - could be "Chapter" or "University Name" or "Name"
-  const universityNameIndex = findColumnIndex(['chapter', 'university name', 'university', 'name', 'uni']);
+  // Find university name - prioritize "Chapter" first, then other options
+  // Note: "Chapter" is the university name, "Name" is the contact person name
+  const universityNameIndex = findColumnIndex(['chapter', 'university name', 'university', 'uni']);
   
-  // Find main contact person - could be "Name" or "1st POC" related
+  // Find main contact person - "Name" column (NOT "Chapter")
+  // We explicitly exclude "chapter" from this search to avoid confusion
   const contactPersonIndex = findColumnIndex(['name', 'main contact person name', 'contact person', 'contact name', '1st poc name', 'first poc name']);
   
   // Find main contact email - "1st POC - Email"
@@ -292,6 +294,7 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
     };
     
     // Log what we found for debugging
+    console.log(`📊 Processing row ${i} for ${universityName}:`);
     console.log(`📊 ${universityName} - Main contact:`, {
       person: mainContact.contactPerson,
       email: mainContact.contactEmail,
@@ -306,6 +309,14 @@ function parseSheet(sheet: XLSX.WorkSheet, zone: 'LZ' | 'SZ'): ContactData[] {
     });
     console.log(`📊 ${universityName} - Has second contact:`, 
       !!(secondContact.contactPerson || secondContact.contactEmail || secondContact.contactPhone));
+    console.log(`📊 ${universityName} - Raw row data:`, {
+      universityNameCol: row[universityNameIndex],
+      contactPersonCol: contactPersonIndex !== -1 ? row[contactPersonIndex] : 'N/A',
+      contactEmailCol: contactEmailIndex !== -1 ? row[contactEmailIndex] : 'N/A',
+      contactPhoneCol: contactPhoneIndex !== -1 ? row[contactPhoneIndex] : 'N/A',
+      secondContactEmailCol: secondContactEmailIndex !== -1 ? row[secondContactEmailIndex] : 'N/A',
+      secondContactPhoneCol: secondContactPhoneIndex !== -1 ? row[secondContactPhoneIndex] : 'N/A'
+    });
     
     // Build contacts array if we have multiple contacts
     const contacts: any[] = [];

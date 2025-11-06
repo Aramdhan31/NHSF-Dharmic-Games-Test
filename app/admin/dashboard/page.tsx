@@ -87,7 +87,6 @@ export default function AdminDashboardPage() {
   const [adminRequests, setAdminRequests] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedZone, setSelectedZone] = useState("ALL")
-  const [showNonCompeting, setShowNonCompeting] = useState(false)
   const [message, setMessage] = useState<{type: 'success' | 'error' | 'warning', text: string, action?: string} | null>(null)
   const [saving, setSaving] = useState(false)
   const [editingMatch, setEditingMatch] = useState<any>(null)
@@ -118,6 +117,7 @@ export default function AdminDashboardPage() {
     sports: [] as string[],
     status: 'approved'
   })
+  const [selectedUniversity, setSelectedUniversity] = useState<any>(null)
   const [newPlayer, setNewPlayer] = useState({
     firstName: '',
     lastName: '',
@@ -321,6 +321,15 @@ export default function AdminDashboardPage() {
         }))
         universitiesWithIds.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
         setUniversities(universitiesWithIds)
+        
+        // Update selected university if it exists
+        if (selectedUniversity) {
+          const updatedUni = universitiesWithIds.find(u => u.id === selectedUniversity.id || u.name === selectedUniversity.name)
+          if (updatedUni) {
+            setSelectedUniversity(updatedUni)
+          }
+        }
+        
         console.log('📊 Universities updated in real-time (sorted alphabetically):', universitiesWithIds.length)
         console.log('📊 Competing universities:', universitiesWithIds.filter(u => u.isCompeting).length)
         console.log('📊 Sample competing universities:', universitiesWithIds.filter(u => u.isCompeting).slice(0, 3).map(u => u.name))
@@ -749,10 +758,83 @@ export default function AdminDashboardPage() {
         u.id === universityId ? { ...u, ...updateData } : u
       ))
       
+      // Update selected university if it's the same one
+      if (selectedUniversity && selectedUniversity.id === universityId) {
+        setSelectedUniversity({ ...selectedUniversity, ...updateData })
+      }
+      
       console.log(`✅ Updated ${field} for university ${universityId}`)
     } catch (error: any) {
       console.error(`❌ Error updating ${field}:`, error)
       setMessage({type: 'error', text: `Failed to update ${field}`})
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleUpdateTeamPaymentField = async (universityId: string, sport: string, field: string, value: any) => {
+    try {
+      setSaving(true)
+      
+      // Get current university data
+      const currentUni = universities.find(u => u.id === universityId) || selectedUniversity
+      const currentTeamPayments = currentUni?.teamPayments || {}
+      
+      const updateData: any = {
+        teamPayments: {
+          ...currentTeamPayments,
+          [sport]: {
+            ...currentTeamPayments[sport],
+            [field]: value,
+            lastUpdated: new Date().toISOString()
+          }
+        },
+        updatedAt: new Date().toISOString()
+      }
+      
+      // Update Firestore FIRST (since listeners are watching Firestore)
+      try {
+        const universityRef = doc(db, 'universities', universityId)
+        await updateDoc(universityRef, updateData)
+        console.log(`✅ Updated ${field} for ${sport} team in Firestore - changes will appear immediately`)
+      } catch (firestoreError: any) {
+        // If document doesn't exist, create it
+        if (firestoreError?.code === 'not-found' || firestoreError?.code === 5) {
+          const universityRef = doc(db, 'universities', universityId)
+          await setDoc(universityRef, {
+            ...updateData,
+            id: universityId,
+            createdAt: new Date().toISOString()
+          })
+          console.log('✅ Created new Firestore document')
+        } else {
+          console.error('⚠️ Could not update Firestore:', firestoreError)
+        }
+      }
+      
+      // Also update Realtime Database for consistency
+      try {
+        const universityRealtimeRef = ref(realtimeDb, `universities/${universityId}`)
+        await update(universityRealtimeRef, updateData)
+        console.log('✅ Updated Realtime Database')
+      } catch (realtimeError) {
+        console.log('⚠️ Could not update Realtime Database:', realtimeError)
+      }
+      
+      // Update local state immediately
+      setUniversities(prev => prev.map(u => 
+        u.id === universityId ? { ...u, ...updateData } : u
+      ))
+      
+      // Update selected university if it's the same one
+      if (selectedUniversity && selectedUniversity.id === universityId) {
+        setSelectedUniversity({ ...selectedUniversity, ...updateData })
+      }
+      
+      console.log(`✅ Updated ${field} for ${sport} team at university ${universityId}`)
+    } catch (error: any) {
+      console.error(`❌ Error updating ${field} for team:`, error)
+      setMessage({type: 'error', text: `Failed to update ${field} for team`})
     } finally {
       setSaving(false)
     }
@@ -1056,18 +1138,6 @@ export default function AdminDashboardPage() {
 
   const adminName = user?.displayName || user?.email?.split('@')[0] || 'Admin'
 
-  const handleHideFromRecent = async (university: any) => {
-    if (!adminCheck?.isSuperAdmin) return
-    try {
-      const universityRef = doc(db, "universities", university.id)
-      await updateDoc(universityRef, { hiddenFromRecent: true, lastUpdated: new Date() })
-      setUniversities(prev => prev.map(u => u.id === university.id ? { ...u, hiddenFromRecent: true } : u))
-      setMessage({ type: 'success', text: `${university.name} hidden from Recent Activity` })
-    } catch (e) {
-      console.error('Failed to hide from recent:', e)
-      setMessage({ type: 'error', text: 'Failed to update Recent Activity' })
-    }
-  }
 
   // Show loading while checking auth and admin status
   if (loading || (user && !adminCheck)) {
@@ -1347,53 +1417,265 @@ export default function AdminDashboardPage() {
                   </CardContent>
                 </Card>
 
-                {/* Recent Activity */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Activity className="h-5 w-5 text-green-600" />
-                      <span>Recent Activity</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {universities.filter(uni => !uni.hiddenFromRecent).slice(0, 3).map((uni, index) => (
-                        <div key={uni.id || `uni-${index}`} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                          <div className="p-2 bg-orange-100 rounded-full">
-                            <Building2 className="h-4 w-4 text-orange-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">{uni.name}</p>
-                            <p className="text-sm text-gray-500">{uni.zone} • {uni.sports?.length || 0} sports</p>
-                          </div>
-                          <Badge variant="outline">{uni.status}</Badge>
-                          {adminCheck?.isSuperAdmin && (
-                            <div className="flex items-center space-x-2 ml-2">
-                              <Button size="sm" variant="outline" onClick={() => setEditingUniversity(uni)}>
-                                <Edit className="h-4 w-4 mr-1" /> Edit
-                              </Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleHideFromRecent(uni)}>
-                                <XCircle className="h-4 w-4 mr-1" /> Hide
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
               </TabsContent>
 
               {/* Universities Tab */}
               <TabsContent value="universities" className="space-y-4 sm:space-y-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-                  <h2 className="text-xl sm:text-2xl font-bold">Universities</h2>
-                  <Button onClick={() => setShowAddUniversity(true)} size="sm" className="w-full sm:w-auto">
-                    <Plus className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Add University</span>
-                    <span className="sm:hidden">Add</span>
-                  </Button>
-                </div>
+                {selectedUniversity ? (
+                  // Detailed University View
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setSelectedUniversity(null)}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Back to List
+                        </Button>
+                        <h2 className="text-xl sm:text-2xl font-bold">{selectedUniversity.name}</h2>
+                        <Badge variant="outline">{selectedUniversity.zone}</Badge>
+                        {selectedUniversity.isCompeting && (
+                          <Badge className="bg-green-500">Competing</Badge>
+                        )}
+                      </div>
+                      <Button onClick={() => setEditingUniversity(selectedUniversity)} size="sm">
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit University
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Contact Information */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Phone className="h-5 w-5" />
+                            Contact Information
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {(() => {
+                            const contactsList = selectedUniversity.contacts && Array.isArray(selectedUniversity.contacts) && selectedUniversity.contacts.length > 0 
+                              ? selectedUniversity.contacts 
+                              : (selectedUniversity.contactPerson || selectedUniversity.contactEmail || selectedUniversity.contactPhone 
+                                ? [{ 
+                                    contactPerson: selectedUniversity.contactPerson, 
+                                    contactEmail: selectedUniversity.contactEmail, 
+                                    contactPhone: selectedUniversity.contactPhone, 
+                                    contactRole: selectedUniversity.contactRole 
+                                  }] 
+                                : []);
+                            
+                            if (contactsList.length === 0) {
+                              return (
+                                <div className="text-sm text-gray-500">
+                                  No contact details available
+                                </div>
+                              );
+                            }
+                            
+                            return contactsList.map((contact: any, index: number) => (
+                              <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+                                {contactsList.length > 1 && (
+                                  <div className="text-xs font-medium text-gray-700 mb-2">
+                                    Contact {index + 1} of {contactsList.length}
+                                  </div>
+                                )}
+                                {contact.contactPerson && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <User className="h-4 w-4 text-gray-400" />
+                                    <span className="font-medium">{contact.contactPerson}</span>
+                                    {contact.contactRole && (
+                                      <span className="text-gray-500">({contact.contactRole})</span>
+                                    )}
+                                  </div>
+                                )}
+                                {contact.contactEmail && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Mail className="h-4 w-4 text-gray-400" />
+                                    <a href={`mailto:${contact.contactEmail}`} className="text-blue-600 hover:underline">
+                                      {contact.contactEmail}
+                                    </a>
+                                  </div>
+                                )}
+                                {contact.contactPhone && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Phone className="h-4 w-4 text-gray-400" />
+                                    <a href={`tel:${contact.contactPhone}`} className="text-blue-600 hover:underline">
+                                      {contact.contactPhone}
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            ));
+                          })()}
+                        </CardContent>
+                      </Card>
+
+                      {/* Sports & Teams */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Gamepad2 className="h-5 w-5" />
+                            Sports & Teams
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {selectedUniversity.sports && selectedUniversity.sports.length > 0 ? (
+                            <div className="space-y-3">
+                              {selectedUniversity.sports.map((sport: string, idx: number) => (
+                                <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                  <div className="font-medium text-sm mb-2">{sport}</div>
+                                  {selectedUniversity.teamInfo && selectedUniversity.teamInfo[sport] && (
+                                    <div className="text-xs text-gray-600 space-y-1">
+                                      {selectedUniversity.teamInfo[sport].teamA && (
+                                        <div>Team A: {selectedUniversity.teamInfo[sport].teamA.isOpen ? 'Open' : 'Closed'}</div>
+                                      )}
+                                      {selectedUniversity.teamInfo[sport].teamB && (
+                                        <div>Team B: {selectedUniversity.teamInfo[sport].teamB.isOpen ? 'Open' : 'Closed'}</div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-gray-500">No sports registered</div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Payment & Confirmation (Per Team) */}
+                      {selectedUniversity.sports && selectedUniversity.sports.length > 0 && (
+                        <Card className="lg:col-span-2">
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <DollarSign className="h-5 w-5" />
+                              Payment & Confirmation (Per Team)
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {selectedUniversity.sports.map((sport: string) => {
+                                const teamPayment = selectedUniversity.teamPayments?.[sport] || {};
+                                return (
+                                  <div key={sport} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div className="font-medium text-sm mb-3">{sport}</div>
+                                    <div className="space-y-3">
+                                      <div className="flex items-center justify-between">
+                                        <Label className="text-sm">Confirmed?</Label>
+                                        <Checkbox
+                                          checked={teamPayment.confirmed || false}
+                                          onCheckedChange={(checked) => {
+                                            handleUpdateTeamPaymentField(selectedUniversity.id, sport, 'confirmed', checked === true);
+                                          }}
+                                          disabled={saving}
+                                        />
+                                      </div>
+                                      <div className="flex items-center justify-between">
+                                        <Label className="text-sm">Total</Label>
+                                        <Input
+                                          type="number"
+                                          value={teamPayment.total || ''}
+                                          onChange={(e) => {
+                                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                            handleUpdateTeamPaymentField(selectedUniversity.id, sport, 'total', value);
+                                          }}
+                                          className="w-24 h-8 text-sm"
+                                          placeholder="0.00"
+                                          disabled={saving}
+                                        />
+                                      </div>
+                                      <div className="flex items-center justify-between">
+                                        <Label className="text-sm">Payment Link Sent?</Label>
+                                        <Checkbox
+                                          checked={teamPayment.paymentLinkSent || false}
+                                          onCheckedChange={(checked) => {
+                                            handleUpdateTeamPaymentField(selectedUniversity.id, sport, 'paymentLinkSent', checked === true);
+                                          }}
+                                          disabled={saving}
+                                        />
+                                      </div>
+                                      <div className="flex items-center justify-between">
+                                        <Label className="text-sm">Paid?</Label>
+                                        <Checkbox
+                                          checked={teamPayment.paid || false}
+                                          onCheckedChange={(checked) => {
+                                            handleUpdateTeamPaymentField(selectedUniversity.id, sport, 'paid', checked === true);
+                                          }}
+                                          disabled={saving}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Players */}
+                      <Card className="lg:col-span-2">
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="flex items-center gap-2">
+                              <Users className="h-5 w-5" />
+                              Players ({players.filter((p: any) => p.university === selectedUniversity.name).length})
+                            </CardTitle>
+                            <Button 
+                              size="sm"
+                              onClick={() => {
+                                setNewPlayer({ ...newPlayer, university: selectedUniversity.name });
+                                setShowAddPlayer(true);
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Player
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          {players.filter((p: any) => p.university === selectedUniversity.name).length > 0 ? (
+                            <div className="space-y-2">
+                              {players
+                                .filter((p: any) => p.university === selectedUniversity.name)
+                                .map((player: any, idx: number) => (
+                                  <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between">
+                                    <div>
+                                      <div className="font-medium text-sm">{player.firstName} {player.lastName}</div>
+                                      <div className="text-xs text-gray-600">{player.sport} • {player.email}</div>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setEditingPlayer(player)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-gray-500">No players registered for this university</div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                ) : (
+                  // University List View
+                  <>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                      <h2 className="text-xl sm:text-2xl font-bold">Universities</h2>
+                      <Button onClick={() => setShowAddUniversity(true)} size="sm" className="w-full sm:w-auto">
+                        <Plus className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Add University</span>
+                        <span className="sm:hidden">Add</span>
+                      </Button>
+                    </div>
                 
                 {/* Search and Filter */}
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -1415,26 +1697,6 @@ export default function AdminDashboardPage() {
                       <SelectItem value="LZ+SZ">London & South Zone</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button
-                    variant={showNonCompeting ? "default" : "outline"}
-                    onClick={() => setShowNonCompeting(!showNonCompeting)}
-                    className="whitespace-nowrap w-full sm:w-auto"
-                    size="sm"
-                  >
-                    {showNonCompeting ? (
-                      <>
-                        <Eye className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Show All</span>
-                        <span className="sm:hidden">All</span>
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Show Non-Competing</span>
-                        <span className="sm:hidden">Non-Competing</span>
-                      </>
-                    )}
-                  </Button>
                 </div>
                 
                 {/* Show competing universities first, then others */}
@@ -1463,7 +1725,11 @@ export default function AdminDashboardPage() {
                         })
                         .sort((a, b) => a.name.localeCompare(b.name))
                     .map((uni, index) => (
-                    <Card key={uni.id || `uni-${index}`} className="hover:shadow-md transition-all border border-gray-200">
+                    <Card 
+                      key={uni.id || `uni-${index}`} 
+                      className="hover:shadow-md transition-all border border-gray-200 cursor-pointer"
+                      onClick={() => setSelectedUniversity(uni)}
+                    >
                       <CardHeader className="pb-4">
                         <div className="flex items-start justify-between gap-3">
                           <CardTitle className="text-lg font-semibold text-gray-900">{uni.name}</CardTitle>
@@ -1498,6 +1764,7 @@ export default function AdminDashboardPage() {
                               checked={uni.confirmed || false}
                               onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'confirmed', checked)}
                               disabled={saving}
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </div>
                           <div className="flex items-center justify-between text-sm">
@@ -1509,6 +1776,7 @@ export default function AdminDashboardPage() {
                               placeholder="0.00"
                               className="w-24 h-7 text-xs"
                               disabled={saving}
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </div>
                           <div className="flex items-center justify-between text-sm">
@@ -1517,6 +1785,7 @@ export default function AdminDashboardPage() {
                               checked={uni.paymentLinkSent || false}
                               onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paymentLinkSent', checked)}
                               disabled={saving}
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </div>
                           <div className="flex items-center justify-between text-sm">
@@ -1525,6 +1794,7 @@ export default function AdminDashboardPage() {
                               checked={uni.paid || false}
                               onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paid', checked)}
                               disabled={saving}
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </div>
                         </div>
@@ -1532,7 +1802,10 @@ export default function AdminDashboardPage() {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => setEditingUniversity(uni)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingUniversity(uni);
+                            }}
                             className="flex-1 sm:flex-none text-xs"
                           >
                             <Edit className="h-3.5 w-3.5 mr-1.5" />
@@ -1541,7 +1814,10 @@ export default function AdminDashboardPage() {
                           <Button 
                             size="sm" 
                             variant={uni.isCompeting ? "destructive" : "default"}
-                            onClick={() => handleToggleUniversityStatus(uni)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleUniversityStatus(uni);
+                            }}
                             disabled={saving}
                             className="flex-1 sm:flex-none text-xs"
                           >
@@ -1588,7 +1864,11 @@ export default function AdminDashboardPage() {
                         })
                         .sort((a, b) => a.name.localeCompare(b.name))
                     .map((uni, index) => (
-                    <Card key={uni.id || `uni-${index}`} className="hover:shadow-md transition-all border border-gray-200">
+                    <Card 
+                      key={uni.id || `uni-${index}`} 
+                      className="hover:shadow-md transition-all border border-gray-200 cursor-pointer"
+                      onClick={() => setSelectedUniversity(uni)}
+                    >
                       <CardHeader className="pb-4">
                         <div className="flex items-start justify-between gap-3">
                           <CardTitle className="text-lg font-semibold text-gray-900">{uni.name}</CardTitle>
@@ -1623,6 +1903,7 @@ export default function AdminDashboardPage() {
                               checked={uni.confirmed || false}
                               onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'confirmed', checked)}
                               disabled={saving}
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </div>
                           <div className="flex items-center justify-between text-sm">
@@ -1634,6 +1915,7 @@ export default function AdminDashboardPage() {
                               placeholder="0.00"
                               className="w-24 h-7 text-xs"
                               disabled={saving}
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </div>
                           <div className="flex items-center justify-between text-sm">
@@ -1642,6 +1924,7 @@ export default function AdminDashboardPage() {
                               checked={uni.paymentLinkSent || false}
                               onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paymentLinkSent', checked)}
                               disabled={saving}
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </div>
                           <div className="flex items-center justify-between text-sm">
@@ -1650,6 +1933,7 @@ export default function AdminDashboardPage() {
                               checked={uni.paid || false}
                               onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paid', checked)}
                               disabled={saving}
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </div>
                         </div>
@@ -1657,7 +1941,10 @@ export default function AdminDashboardPage() {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => setEditingUniversity(uni)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingUniversity(uni);
+                            }}
                             className="flex-1 sm:flex-none text-xs"
                           >
                             <Edit className="h-3.5 w-3.5 mr-1.5" />
@@ -1666,7 +1953,10 @@ export default function AdminDashboardPage() {
                           <Button 
                             size="sm" 
                             variant={uni.isCompeting ? "destructive" : "default"}
-                            onClick={() => handleToggleUniversityStatus(uni)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleUniversityStatus(uni);
+                            }}
                             disabled={saving}
                             className="flex-1 sm:flex-none text-xs"
                           >
@@ -1689,238 +1979,6 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
-                  {/* Non-Competing Universities Section - Only shown when toggle is on */}
-                  {showNonCompeting && (
-                    <div className="space-y-6">
-                      {/* LZ+SZ Non-Competing */}
-                      <div>
-                        <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center space-x-2 flex-wrap">
-                          <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                          <span className="bg-gradient-to-r from-blue-500 to-yellow-500 bg-clip-text text-transparent">LZ+SZ - Other Universities</span>
-                          <Badge variant="secondary" className="ml-2 text-xs">
-                            {universities.filter(uni => {
-                              const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
-                              const matchesZone = selectedZone === 'ALL' || selectedZone === 'LZ+SZ' || uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ'
-                              const isCompeting = uni.isCompeting === true || uni.status === 'competing'
-                              return matchesSearch && matchesZone && !isCompeting && (uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ')
-                            }).length}
-                          </Badge>
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                          {universities
-                            .filter(uni => {
-                              const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
-                              const matchesZone = selectedZone === 'ALL' || selectedZone === 'LZ+SZ' || uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ'
-                              const isCompeting = uni.isCompeting === true || uni.status === 'competing'
-                              return matchesSearch && matchesZone && !isCompeting && (uni.zone === 'LZ+SZ' || uni.region === 'LZ+SZ')
-                            })
-                            .sort((a, b) => a.name.localeCompare(b.name))
-                            .map((uni, index) => (
-                          <Card key={uni.id || `uni-${index}`} className="hover:shadow-md transition-all border border-gray-200 opacity-75">
-                            <CardHeader className="pb-4">
-                              <div className="flex items-start justify-between gap-3">
-                                <CardTitle className="text-lg font-semibold text-gray-900">{uni.name}</CardTitle>
-                                <div className="flex flex-wrap gap-2 flex-shrink-0">
-                                  <Badge variant="outline" className="text-xs font-medium">{uni.zone}</Badge>
-                                  <Badge variant="secondary" className="text-xs font-medium">Not Competing</Badge>
-                                </div>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                              {uni.email && (
-                                <div className="flex items-center gap-2 text-sm text-gray-700">
-                                  <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                                  <span className="truncate">{uni.email}</span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-2 text-sm text-gray-700">
-                                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                                <span>{uni.zone}</span>
-                              </div>
-                              <div className="flex items-start gap-2 text-sm text-gray-700">
-                                <Gamepad2 className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                                <span className="line-clamp-2">{uni.sports?.join(', ') || 'No sports'}</span>
-                              </div>
-                              {/* Payment/Confirmation Fields */}
-                              <div className="pt-2 border-t border-gray-100 space-y-2">
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-600">Confirmed?</span>
-                                  <Checkbox
-                                    checked={uni.confirmed || false}
-                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'confirmed', checked)}
-                                    disabled={saving}
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-600">Total:</span>
-                                  <Input
-                                    type="number"
-                                    value={uni.total || ''}
-                                    onChange={(e) => handleUpdatePaymentField(uni.id, 'total', e.target.value)}
-                                    placeholder="0.00"
-                                    className="w-24 h-7 text-xs"
-                                    disabled={saving}
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-600">Payment Link Sent?</span>
-                                  <Checkbox
-                                    checked={uni.paymentLinkSent || false}
-                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paymentLinkSent', checked)}
-                                    disabled={saving}
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-600">Paid?</span>
-                                  <Checkbox
-                                    checked={uni.paid || false}
-                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paid', checked)}
-                                    disabled={saving}
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex gap-2 pt-2 border-t border-gray-100">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => setEditingUniversity(uni)}
-                                  className="flex-1 sm:flex-none text-xs"
-                                >
-                                  <Edit className="h-3.5 w-3.5 mr-1.5" />
-                                  Edit
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="default"
-                                  onClick={() => handleToggleUniversityStatus(uni)}
-                                  disabled={saving}
-                                  className="flex-1 sm:flex-none text-xs"
-                                >
-                                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                                  Add
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* NZ+CZ Non-Competing */}
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center space-x-2 flex-wrap">
-                        <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                        <span className="bg-gradient-to-r from-red-500 to-green-500 bg-clip-text text-transparent">NZ+CZ - Other Universities</span>
-                        <Badge variant="secondary" className="ml-2 text-xs">
-                          {universities.filter(uni => {
-                            const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
-                            const matchesZone = selectedZone === 'ALL' || selectedZone === 'NZ+CZ' || uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ'
-                            const isCompeting = uni.isCompeting === true || uni.status === 'competing'
-                            return matchesSearch && matchesZone && !isCompeting && (uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ')
-                          }).length}
-                        </Badge>
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                        {universities
-                          .filter(uni => {
-                            const matchesSearch = searchTerm === '' || uni.name.toLowerCase().includes(searchTerm.toLowerCase())
-                            const matchesZone = selectedZone === 'ALL' || selectedZone === 'NZ+CZ' || uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ'
-                            const isCompeting = uni.isCompeting === true || uni.status === 'competing'
-                            return matchesSearch && matchesZone && !isCompeting && (uni.zone === 'NZ+CZ' || uni.region === 'NZ+CZ')
-                          })
-                          .sort((a, b) => a.name.localeCompare(b.name))
-                          .map((uni, index) => (
-                          <Card key={uni.id || `uni-${index}`} className="hover:shadow-md transition-all border border-gray-200 opacity-75">
-                            <CardHeader className="pb-4">
-                              <div className="flex items-start justify-between gap-3">
-                                <CardTitle className="text-lg font-semibold text-gray-900">{uni.name}</CardTitle>
-                                <div className="flex flex-wrap gap-2 flex-shrink-0">
-                                  <Badge variant="outline" className="text-xs font-medium">{uni.zone}</Badge>
-                                  <Badge variant="secondary" className="text-xs font-medium">Not Competing</Badge>
-                                </div>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                              {uni.email && (
-                                <div className="flex items-center gap-2 text-sm text-gray-700">
-                                  <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                                  <span className="truncate">{uni.email}</span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-2 text-sm text-gray-700">
-                                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                                <span>{uni.zone}</span>
-                              </div>
-                              <div className="flex items-start gap-2 text-sm text-gray-700">
-                                <Gamepad2 className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                                <span className="line-clamp-2">{uni.sports?.join(', ') || 'No sports'}</span>
-                              </div>
-                              {/* Payment/Confirmation Fields */}
-                              <div className="pt-2 border-t border-gray-100 space-y-2">
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-600">Confirmed?</span>
-                                  <Checkbox
-                                    checked={uni.confirmed || false}
-                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'confirmed', checked)}
-                                    disabled={saving}
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-600">Total:</span>
-                                  <Input
-                                    type="number"
-                                    value={uni.total || ''}
-                                    onChange={(e) => handleUpdatePaymentField(uni.id, 'total', e.target.value)}
-                                    placeholder="0.00"
-                                    className="w-24 h-7 text-xs"
-                                    disabled={saving}
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-600">Payment Link Sent?</span>
-                                  <Checkbox
-                                    checked={uni.paymentLinkSent || false}
-                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paymentLinkSent', checked)}
-                                    disabled={saving}
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-600">Paid?</span>
-                                  <Checkbox
-                                    checked={uni.paid || false}
-                                    onCheckedChange={(checked) => handleUpdatePaymentField(uni.id, 'paid', checked)}
-                                    disabled={saving}
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex gap-2 pt-2 border-t border-gray-100">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => setEditingUniversity(uni)}
-                                  className="flex-1 sm:flex-none text-xs"
-                                >
-                                  <Edit className="h-3.5 w-3.5 mr-1.5" />
-                                  Edit
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="default"
-                                  onClick={() => handleToggleUniversityStatus(uni)}
-                                  disabled={saving}
-                                  className="flex-1 sm:flex-none text-xs"
-                                >
-                                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                                  Add
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                    </div>
-                  )}
                 </div>
               </TabsContent>
 

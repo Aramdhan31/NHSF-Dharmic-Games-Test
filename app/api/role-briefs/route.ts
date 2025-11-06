@@ -14,12 +14,31 @@ export async function GET() {
 
     const buffer = fs.readFileSync(filePath)
     
-    // Convert .docx to HTML
-    const result = await mammoth.convertToHtml({ buffer })
+    // Convert .docx to HTML with options to preserve all content
+    const result = await mammoth.convertToHtml(
+      { buffer },
+      {
+        styleMap: [
+          "p[style-name='Heading 1'] => h1:fresh",
+          "p[style-name='Heading 2'] => h2:fresh",
+          "p[style-name='Heading 3'] => h3:fresh",
+          "p[style-name='Title'] => h1.title:fresh",
+          "r[style-name='Strong'] => strong",
+        ],
+        includeDefaultStyleMap: true,
+      }
+    )
+    
     const html = result.value
+    const messages = result.messages
+    
+    // Log any warnings or messages
+    if (messages && messages.length > 0) {
+      console.log('Mammoth conversion messages:', messages)
+    }
     
     // Return the HTML content
-    return NextResponse.json({ html })
+    return NextResponse.json({ html, messages })
   } catch (error) {
     console.error('Error converting .docx to HTML:', error)
     return NextResponse.json(

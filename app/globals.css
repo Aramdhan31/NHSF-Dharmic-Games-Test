@@ -255,3 +255,87 @@ a {
 a:hover {
   text-decoration-thickness: 2px;
 }
+
+/* Role Briefs Content Styling */
+.role-briefs-content {
+  /* Ensure all content is properly formatted */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.role-briefs-content p {
+  margin-bottom: 1rem;
+  line-height: 1.75;
+}
+
+.role-briefs-content h1,
+.role-briefs-content h2,
+.role-briefs-content h3,
+.role-briefs-content h4,
+.role-briefs-content h5,
+.role-briefs-content h6 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.role-briefs-content h1 {
+  font-size: 2.25rem;
+  border-bottom: 2px solid rgb(254 243 199);
+  padding-bottom: 0.5rem;
+}
+
+.role-briefs-content h2 {
+  font-size: 1.875rem;
+  margin-top: 1.5rem;
+}
+
+.role-briefs-content h3 {
+  font-size: 1.5rem;
+  margin-top: 1rem;
+}
+
+.role-briefs-content ul,
+.role-briefs-content ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.role-briefs-content li {
+  margin-bottom: 0.5rem;
+  line-height: 1.75;
+}
+
+.role-briefs-content strong,
+.role-briefs-content b {
+  font-weight: 600;
+  color: rgb(17 24 39);
+}
+
+.role-briefs-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.role-briefs-content table th,
+.role-briefs-content table td {
+  border: 1px solid rgb(209 213 219);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.role-briefs-content table th {
+  background-color: rgb(255 247 237);
+  font-weight: 600;
+}
+
+/* Ensure proper spacing for all elements */
+.role-briefs-content > *:first-child {
+  margin-top: 0;
+}
+
+.role-briefs-content > *:last-child {
+  margin-bottom: 0;
+}

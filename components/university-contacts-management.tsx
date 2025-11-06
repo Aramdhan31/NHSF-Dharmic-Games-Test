@@ -699,6 +699,3 @@ function UniversityContactCard({
   );
 }
 
-
-}
-

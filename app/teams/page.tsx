@@ -371,6 +371,8 @@ function TeamsPageContent() {
     return uni.zone === selectedTournament
   })
   
+  console.log('📊 Static competing universities:', staticCompetingUnis.length, staticCompetingUnis.map(u => ({ name: u.name, zone: u.zone, isSchool: (u as any).isSchool })))
+  
   // Create a map of existing universities by name for deduplication
   const existingUniNames = new Set(universitiesData.map(uni => uni.name.toLowerCase()))
   
@@ -398,12 +400,18 @@ function TeamsPageContent() {
   // Combine Firebase data with static universities
   const allUniversities = [...universitiesData, ...staticUnisToAdd]
   
+  console.log('📊 All universities (Firebase + Static):', allUniversities.length)
+  console.log('📊 Static universities to add:', staticUnisToAdd.length, staticUnisToAdd.map(u => ({ name: u.name, zone: u.zone, isSchool: u.isSchool })))
+  
   // ✅ Automatically sort alphabetically by name
   const filteredUniversities = (
     selectedTournament === "all"
       ? allUniversities
       : allUniversities.filter((uni) => uni.zone === selectedTournament)
   ).sort((a, b) => a.name.localeCompare(b.name))
+  
+  console.log('📊 Filtered universities:', filteredUniversities.length, 'Selected tournament:', selectedTournament)
+  console.log('📊 Filtered universities with schools:', filteredUniversities.filter(u => (u as any).isSchool).map(u => u.name))
 
   // Count universities that are actually competing (based on isCompeting field or status)
   const competingUniversitiesList = filteredUniversities.filter(uni => 
@@ -950,8 +958,8 @@ function TeamsPageContent() {
                 )}
               </div>
 
-              {/* Competing Schools Section - Only show for NZ+CZ */}
-              {selectedTournament === "NZ+CZ" && competingSchoolsList.length > 0 && (
+              {/* Competing Schools Section - Show for NZ+CZ or when viewing all zones */}
+              {(selectedTournament === "NZ+CZ" || selectedTournament === "all") && competingSchoolsList.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-gray-900 flex items-center">

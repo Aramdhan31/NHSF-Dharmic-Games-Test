@@ -401,13 +401,16 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
         </CardContent>
       </Card>
 
-      {/* Competing Universities */}
+      {/* Competing Universities Only - Auto-updates when universities are added */}
       {competingUniversities.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
               <span>Competing Universities ({competingUniversities.length})</span>
+              <Badge variant="outline" className="ml-2 text-xs">
+                Auto-updates
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -432,38 +435,7 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
         </Card>
       )}
 
-      {/* Non-Competing Universities */}
-      {nonCompetingUniversities.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <AlertCircle className="h-5 w-5 text-gray-500" />
-              <span>Other Universities ({nonCompetingUniversities.length})</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {nonCompetingUniversities.map((uni) => (
-                <UniversityContactCard
-                  key={uni.id}
-                  university={uni}
-                  isAdmin={isAdmin}
-                  isEditing={editingId === uni.id}
-                  editingData={editingData}
-                  onEdit={() => handleEdit(uni)}
-                  onSave={() => handleSave(uni.id)}
-                  onCancel={handleCancel}
-                  onEditChange={(data) => setEditingData(data)}
-                  onView={() => setViewingId(viewingId === uni.id ? null : uni.id)}
-                  isViewing={viewingId === uni.id}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {filteredUniversities.length === 0 && (
+      {competingUniversities.length === 0 && !loading && (
         <Card>
           <CardContent className="p-12 text-center text-gray-500">
             No universities found matching your search criteria.

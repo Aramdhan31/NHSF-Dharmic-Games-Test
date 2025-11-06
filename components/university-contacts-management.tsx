@@ -73,13 +73,13 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
                   user?.email?.includes('admin') || user?.email?.includes('superadmin');
 
   useEffect(() => {
-    loadUniversities();
-    
-    // Set up real-time listener for universities
+    // Set up real-time listener for universities (replaces loadUniversities)
     const universitiesRef = collection(db, 'universities');
     const q = query(universitiesRef, orderBy('name'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const universitiesData = snapshot.docs.map(doc => ({
+      console.log('🔄 Universities data changed in contact management - AUTO-UPDATING');
+      
+      let universitiesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as UniversityContact[];
@@ -114,6 +114,9 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
             const existing = universitiesData[existingIndex];
             universitiesData[existingIndex] = {
               ...existing,
+              // Ensure isCompeting is set if static says it should be competing
+              isCompeting: existing.isCompeting || staticUni.isCompeting || false,
+              status: existing.status || (staticUni.isCompeting ? 'competing' : existing.status),
               // Merge contact details from static if missing in Firestore
               contactPerson: existing.contactPerson || staticUni.contactPerson || '',
               contactEmail: existing.contactEmail || staticUni.contactEmail || '',
@@ -124,17 +127,25 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
         }
       });
       
-      setUniversities(universitiesData);
-      console.log('📊 Updated universities (real-time):', universitiesData.length);
-      console.log('📊 Sample university with contacts:', universitiesData.find(u => u.contactPerson || u.contactEmail));
+      // Filter to only competing universities
+      const competingOnly = universitiesData.filter(uni => 
+        uni.isCompeting === true || uni.status === 'competing'
+      );
+      
+      setUniversities(competingOnly);
+      setLoading(false);
+      console.log('📊 Updated competing universities (real-time):', competingOnly.length);
+      console.log('📊 Sample university with contacts:', competingOnly.find(u => u.contactPerson || u.contactEmail));
     }, (error) => {
       console.error('❌ Error in universities listener:', error);
+      setLoading(false);
     });
     
     return () => unsubscribe();
   }, []);
 
   const loadUniversities = async () => {
+    // This function is kept for manual refresh if needed, but real-time listener handles updates
     try {
       setLoading(true);
       const universitiesRef = collection(db, 'universities');
@@ -176,6 +187,9 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
             const existing = universitiesData[existingIndex];
             universitiesData[existingIndex] = {
               ...existing,
+              // Ensure isCompeting is set if static says it should be competing
+              isCompeting: existing.isCompeting || staticUni.isCompeting || false,
+              status: existing.status || (staticUni.isCompeting ? 'competing' : existing.status),
               // Merge contact details from static if missing in Firestore
               contactPerson: existing.contactPerson || staticUni.contactPerson || '',
               contactEmail: existing.contactEmail || staticUni.contactEmail || '',
@@ -186,10 +200,15 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
         }
       });
 
-      setUniversities(universitiesData);
-      console.log('📊 Loaded universities:', universitiesData.length);
-      console.log('📊 Universities with contact details:', universitiesData.filter(u => u.contactPerson || u.contactEmail).length);
-      console.log('📊 Sample university:', universitiesData.find(u => u.contactPerson || u.contactEmail));
+      // Filter to only competing universities
+      const competingOnly = universitiesData.filter(uni => 
+        uni.isCompeting === true || uni.status === 'competing'
+      );
+
+      setUniversities(competingOnly);
+      console.log('📊 Loaded competing universities:', competingOnly.length);
+      console.log('📊 Universities with contact details:', competingOnly.filter(u => u.contactPerson || u.contactEmail).length);
+      console.log('📊 Sample university:', competingOnly.find(u => u.contactPerson || u.contactEmail));
     } catch (error: any) {
       console.error('❌ Error loading universities:', error);
       setMessage({ type: 'error', text: 'Failed to load universities' });
@@ -222,9 +241,9 @@ export function UniversityContactsManagement({ currentUser }: UniversityContacts
       if (result.success) {
         setMessage({ 
           type: 'success', 
-          text: `Successfully uploaded ${result.data.saved.total} university contacts (${result.data.saved.updated} updated, ${result.data.saved.created} created)` 
+          text: `Successfully uploaded ${result.data.saved.total} university contacts (${result.data.saved.updated} updated, ${result.data.saved.created} created). Changes will appear automatically.` 
         });
-        await loadUniversities();
+        // No need to call loadUniversities() - real-time listener will update automatically
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to upload file' });
       }

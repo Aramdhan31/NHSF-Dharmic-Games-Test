@@ -534,8 +534,9 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
     return entry.zone === selectedZone || entry.zone.includes(selectedZone);
   });
   
-  // Always merge KCL entries and show both zone colors (regardless of filter)
-  // KCL appears once in the league table with both zone colors
+  // Handle KCL entries based on selected zone
+  // When showing all zones: merge KCL entries and show all sports with both zone colors
+  // When filtering by specific zone: show only that zone's KCL entry with its sports
   const allKclEntries = (entries || []).filter(entry => entry.university.toLowerCase() === 'kcl');
   
   if (allKclEntries.length > 0) {
@@ -543,69 +544,67 @@ export function UnifiedLeagueTable({ showFilters = true }: UnifiedLeagueTablePro
     const kclLZ = allKclEntries.find(entry => entry.zone === 'LZ+SZ' || entry.zone.includes('LZ') || entry.zone.includes('SZ'));
     const kclNZ = allKclEntries.find(entry => entry.zone === 'NZ+CZ' || entry.zone.includes('NZ') || entry.zone.includes('CZ'));
     
-    // Always merge KCL entries and show both zone colors
-    if (kclLZ && kclNZ) {
-      // Merge KCL entries from both zones
-      const combinedPoints = (kclLZ.totalPoints || 0) + (kclNZ.totalPoints || 0);
-      const combinedWins = (kclLZ.totalWins || 0) + (kclNZ.totalWins || 0);
-      const combinedLosses = (kclLZ.totalLosses || 0) + (kclNZ.totalLosses || 0);
-      const combinedDraws = (kclLZ.totalDraws || 0) + (kclNZ.totalDraws || 0);
-      const combinedMatches = (kclLZ.totalMatches || 0) + (kclNZ.totalMatches || 0);
-      
-      // Combine sports arrays (unique sports)
-      const allSports = new Set([
-        ...(kclLZ.sports || []),
-        ...(kclNZ.sports || [])
-      ]);
-      
-      const mergedKCL: LeagueEntry = {
-        id: kclLZ.id || 'kcl-combined',
-        university: 'KCL',
-        zone: 'LZ+SZ & NZ+CZ',
-        sports: Array.from(allSports),
-        totalMatches: combinedMatches,
-        totalWins: combinedWins,
-        totalLosses: combinedLosses,
-        totalDraws: combinedDraws,
-        totalPoints: combinedPoints,
-        sportsBreakdown: { ...(kclLZ.sportsBreakdown || {}), ...(kclNZ.sportsBreakdown || {}) },
-                change: 'same' as const,
-        changeValue: 0,
-        position: 0,
-        isMultiZone: true,
-        zones: ['LZ+SZ', 'NZ+CZ']
-      };
-      
-      filteredEntries = [...filteredEntries, mergedKCL];
-      console.log(`📊 Merged KCL entries: ${combinedPoints} points from both zones`);
-    } else if (kclLZ) {
-      // Only LZ+SZ entry exists, but still show both zone colors
-      const mergedKCL: LeagueEntry = {
-        ...kclLZ,
-        zone: 'LZ+SZ & NZ+CZ',
-        isMultiZone: true,
-        zones: ['LZ+SZ', 'NZ+CZ']
-      };
-      filteredEntries = [...filteredEntries, mergedKCL];
-    } else if (kclNZ) {
-      // Only NZ+CZ entry exists, but still show both zone colors
-      const mergedKCL: LeagueEntry = {
-        ...kclNZ,
-        zone: 'LZ+SZ & NZ+CZ',
-        isMultiZone: true,
-        zones: ['LZ+SZ', 'NZ+CZ']
-      };
-      filteredEntries = [...filteredEntries, mergedKCL];
-    } else {
-      // Single KCL entry, show both zone colors
-      const kclEntry = allKclEntries[0];
-      const mergedKCL: LeagueEntry = {
-        ...kclEntry,
-        zone: 'LZ+SZ & NZ+CZ',
-        isMultiZone: true,
-        zones: ['LZ+SZ', 'NZ+CZ']
-      };
-      filteredEntries = [...filteredEntries, mergedKCL];
+    if (selectedZone === 'all') {
+      // When showing all zones: merge KCL entries and show all sports with both zone colors
+      if (kclLZ && kclNZ) {
+        // Merge KCL entries from both zones
+        const combinedPoints = (kclLZ.totalPoints || 0) + (kclNZ.totalPoints || 0);
+        const combinedWins = (kclLZ.totalWins || 0) + (kclNZ.totalWins || 0);
+        const combinedLosses = (kclLZ.totalLosses || 0) + (kclNZ.totalLosses || 0);
+        const combinedDraws = (kclLZ.totalDraws || 0) + (kclNZ.totalDraws || 0);
+        const combinedMatches = (kclLZ.totalMatches || 0) + (kclNZ.totalMatches || 0);
+        
+        // Combine sports arrays (unique sports)
+        const allSports = new Set([
+          ...(kclLZ.sports || []),
+          ...(kclNZ.sports || [])
+        ]);
+        
+        const mergedKCL: LeagueEntry = {
+          id: kclLZ.id || 'kcl-combined',
+          university: 'KCL',
+          zone: 'LZ+SZ & NZ+CZ',
+          sports: Array.from(allSports),
+          totalMatches: combinedMatches,
+          totalWins: combinedWins,
+          totalLosses: combinedLosses,
+          totalDraws: combinedDraws,
+          totalPoints: combinedPoints,
+          sportsBreakdown: { ...(kclLZ.sportsBreakdown || {}), ...(kclNZ.sportsBreakdown || {}) },
+          change: 'same' as const,
+          changeValue: 0,
+          position: 0,
+          isMultiZone: true,
+          zones: ['LZ+SZ', 'NZ+CZ']
+        };
+        
+        filteredEntries = [...filteredEntries, mergedKCL];
+        console.log(`📊 Merged KCL entries for all zones: ${combinedPoints} points from both zones`);
+      } else if (kclLZ) {
+        // Only LZ+SZ entry exists, but still show both zone colors
+        const mergedKCL: LeagueEntry = {
+          ...kclLZ,
+          zone: 'LZ+SZ & NZ+CZ',
+          isMultiZone: true,
+          zones: ['LZ+SZ', 'NZ+CZ']
+        };
+        filteredEntries = [...filteredEntries, mergedKCL];
+      } else if (kclNZ) {
+        // Only NZ+CZ entry exists, but still show both zone colors
+        const mergedKCL: LeagueEntry = {
+          ...kclNZ,
+          zone: 'LZ+SZ & NZ+CZ',
+          isMultiZone: true,
+          zones: ['LZ+SZ', 'NZ+CZ']
+        };
+        filteredEntries = [...filteredEntries, mergedKCL];
+      }
+    } else if (selectedZone === 'LZ+SZ' && kclLZ) {
+      // When filtering by LZ+SZ: show only LZ+SZ KCL entry with its sports
+      filteredEntries = [...filteredEntries, kclLZ];
+    } else if (selectedZone === 'NZ+CZ' && kclNZ) {
+      // When filtering by NZ+CZ: show only NZ+CZ KCL entry with its sports
+      filteredEntries = [...filteredEntries, kclNZ];
     }
   }
   

@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const emailLower = email.toLowerCase();
+
     if (!adminDb) {
       return NextResponse.json(
         { success: false, error: 'Database not initialized' },
@@ -20,7 +22,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const adminDoc = await adminDb.collection('admins').doc(email).get();
+    let adminDoc = await adminDb.collection('admins').doc(emailLower).get();
+    if (!adminDoc.exists && emailLower !== email) {
+      const legacyDoc = await adminDb.collection('admins').doc(email).get();
+      if (legacyDoc.exists) {
+        const legacyData = legacyDoc.data();
+        await adminDb.collection('admins').doc(emailLower).set({
+          ...legacyData,
+          email: legacyData?.email?.toLowerCase?.() || emailLower,
+          migratedAt: Date.now(),
+        }, { merge: true });
+        adminDoc = await adminDb.collection('admins').doc(emailLower).get();
+      }
+    }
     
     if (!adminDoc.exists) {
       return NextResponse.json({ success: true, role: null });

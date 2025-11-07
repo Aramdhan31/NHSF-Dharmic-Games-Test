@@ -62,8 +62,9 @@ export async function POST(req: NextRequest) {
       }
 
       // Add to admins collection (Firestore)
-      await adminDb.collection('admins').doc(request.email).set({
-        email: request.email,
+      const emailLower = request.email.toLowerCase();
+      await adminDb.collection('admins').doc(emailLower).set({
+        email: emailLower,
         name: request.name || request.email,
         role: 'admin',
         zones: request.zones || [],
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
       const userId = `admin_${Buffer.from(request.email).toString('hex').slice(0, 24)}`;
       await adminDb.collection('users').doc(userId).set({
         id: userId,
-        email: request.email,
+        email: emailLower,
         displayName: request.name || request.email,
         firstName: request.name?.split(' ')[0] || '',
         lastName: request.name?.split(' ').slice(1).join(' ') || '',

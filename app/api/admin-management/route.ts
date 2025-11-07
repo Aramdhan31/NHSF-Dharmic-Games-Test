@@ -45,6 +45,8 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const emailLower = email.toLowerCase();
+
     if (!adminDb) {
       return NextResponse.json(
         { success: false, error: 'Database not initialized' },
@@ -61,7 +63,12 @@ export async function PUT(request: NextRequest) {
     if (zones !== undefined) updateData.zones = zones;
 
     // Update in admins collection
-    await adminDb.collection('admins').doc(email).update(updateData);
+    let docRef = adminDb.collection('admins').doc(emailLower);
+    const docSnapshot = await docRef.get();
+    if (!docSnapshot.exists && emailLower !== email) {
+      docRef = adminDb.collection('admins').doc(email);
+    }
+    await docRef.set(updateData, { merge: true });
 
     // Also update in users collection if it exists
     try {
@@ -116,8 +123,16 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    const emailLower = email.toLowerCase();
+
     // Delete from admins collection
-    await adminDb.collection('admins').doc(email).delete();
+    const docRefLower = adminDb.collection('admins').doc(emailLower);
+    const docLower = await docRefLower.get();
+    if (docLower.exists) {
+      await docRefLower.delete();
+    } else {
+      await adminDb.collection('admins').doc(email).delete();
+    }
 
     // Also delete from users collection if it exists
     try {
@@ -234,12 +249,13 @@ export async function POST(request: NextRequest) {
 
     // Create in Firebase Auth
     const auth = getAuth();
-    const uid = `admin_${Buffer.from(email).toString('hex').slice(0, 24)}`;
+    const emailLower = email.toLowerCase();
+    const uid = `admin_${Buffer.from(emailLower).toString('hex').slice(0, 24)}`;
     
     try {
       // Delete existing user if any
       try {
-        const existing = await auth.getUserByEmail(email);
+        const existing = await auth.getUserByEmail(emailLower);
         await auth.deleteUser(existing.uid);
       } catch {}
 
@@ -247,7 +263,7 @@ export async function POST(request: NextRequest) {
         [
           {
             uid,
-            email,
+            email: emailLower,
             emailVerified: true,
             displayName: name || email,
             passwordHash: Buffer.from(passwordHash),
@@ -268,8 +284,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Create in admins collection
-    await adminDb.collection('admins').doc(email).set({
-      email,
+    await adminDb.collection('admins').doc(emailLower).set({
+      email: emailLower,
       name: name || email,
       role,
       zones: zones || [],
@@ -281,7 +297,7 @@ export async function POST(request: NextRequest) {
     // Also create in users collection
     await adminDb.collection('users').doc(uid).set({
       id: uid,
-      email,
+      email: emailLower,
       displayName: name || email,
       firstName: name?.split(' ')[0] || '',
       lastName: name?.split(' ').slice(1).join(' ') || '',

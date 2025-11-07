@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useFirebase } from "@/lib/firebase-context";
 import { checkAdminStatus } from "@/lib/admin-auth";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AdminSidebar } from "@/components/ui/admin-sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +26,10 @@ import {
   Phone,
   Trophy,
   AlertCircle,
-  Loader2
+  Loader2,
+  CheckCircle,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 type Zone = 'LZ' | 'SZ' | 'CZ' | 'NZ';
@@ -44,16 +49,27 @@ export default function SettingsPage() {
   const { user: currentUser, loading: authLoading } = useFirebase();
   const [loading, setLoading] = useState(false);
   const [adminCheck, setAdminCheck] = useState<any>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
 
-  // Check if user is superadmin
+  // Check if user is admin (any admin, not just superadmin)
   useEffect(() => {
     if (!authLoading && currentUser) {
       const adminStatus = checkAdminStatus(currentUser);
       setAdminCheck(adminStatus);
       
-      // Redirect non-superadmins to dashboard
-      if (!adminStatus.isSuperAdmin) {
-        router.push('/admin/dashboard');
+      // Redirect non-admins to login
+      if (!adminStatus.isAdmin) {
+        router.push('/admin/login');
         return;
       }
     } else if (!authLoading && !currentUser) {
@@ -64,30 +80,100 @@ export default function SettingsPage() {
   // Show loading while checking permissions
   if (authLoading || !adminCheck) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-orange-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading settings...</p>
+      <SidebarProvider>
+        <div className="flex h-screen bg-gray-50">
+          <AdminSidebar />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-orange-600 mx-auto mb-4" />
+              <p className="text-gray-600">Loading settings...</p>
+            </div>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     );
   }
 
-  // Show access denied if not superadmin
-  if (!adminCheck.isSuperAdmin) {
+  // Show access denied if not admin
+  if (!adminCheck.isAdmin) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-          <p className="text-gray-600 mb-4">This page is only accessible to Super Admins.</p>
-          <Button onClick={() => router.push('/admin/dashboard')}>
-            Return to Dashboard
-          </Button>
+      <SidebarProvider>
+        <div className="flex h-screen bg-gray-50">
+          <AdminSidebar />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center max-w-md mx-auto p-6">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+              <p className="text-gray-600 mb-4">This page is only accessible to admins.</p>
+              <Button onClick={() => router.push('/admin/login')}>
+                Go to Login
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     );
   }
+
+  const handlePasswordChange = async () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setPasswordError("Please fill in all password fields");
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError("New passwords do not match");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError("Password must be at least 6 characters long");
+      return;
+    }
+
+    setPasswordLoading(true);
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    try {
+      if (!currentUser?.email) {
+        setPasswordError("Unable to get your email. Please log out and log back in.");
+        setPasswordLoading(false);
+        return;
+      }
+
+      const response = await fetch("/api/change-own-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-email": currentUser.email
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+          email: currentUser.email
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setPasswordSuccess("Password changed successfully!");
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: ""
+        });
+      } else {
+        setPasswordError(data.error || "Failed to change password");
+      }
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      setPasswordError("Failed to change password: " + error.message);
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   const [settings, setSettings] = useState({
     // Zone Settings
@@ -133,15 +219,148 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Zone Settings</h1>
-          <p className="text-gray-600 mt-2">Configure your zone's preferences and tournament settings</p>
-        </div>
+    <SidebarProvider>
+      <div className="flex h-screen bg-gray-50">
+        <AdminSidebar />
+        <div className="flex-1 p-6 ml-64 overflow-y-auto">
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                <Settings className="h-8 w-8 text-orange-600" />
+                Settings
+              </h1>
+              <p className="text-gray-600">Manage your account settings and preferences</p>
+            </div>
 
-        <div className="space-y-6">
+            <div className="space-y-6">
+              {/* Account Security - Password Change */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Lock className="h-5 w-5 text-orange-500" />
+                    <span>Change Password</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {passwordError && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{passwordError}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {passwordSuccess && (
+                    <Alert className="border-green-200 bg-green-50">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-green-700">{passwordSuccess}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="currentPassword">Current Password *</Label>
+                      <div className="relative">
+                        <Input
+                          id="currentPassword"
+                          type={showCurrentPassword ? "text" : "password"}
+                          value={passwordData.currentPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                          placeholder="Enter your current password"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        >
+                          {showCurrentPassword ? (
+                            <EyeOff className="h-4 w-4 text-gray-400" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-gray-400" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="newPassword">New Password *</Label>
+                      <div className="relative">
+                        <Input
+                          id="newPassword"
+                          type={showNewPassword ? "text" : "password"}
+                          value={passwordData.newPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                          placeholder="Enter your new password (min 6 characters)"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                        >
+                          {showNewPassword ? (
+                            <EyeOff className="h-4 w-4 text-gray-400" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-gray-400" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Password must be at least 6 characters long</p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="confirmPassword">Confirm New Password *</Label>
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={passwordData.confirmPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                          placeholder="Confirm your new password"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4 text-gray-400" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-gray-400" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handlePasswordChange}
+                      disabled={passwordLoading}
+                      className="w-full bg-orange-600 hover:bg-orange-700"
+                    >
+                      {passwordLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Changing Password...
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="h-4 w-4 mr-2" />
+                          Change Password
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Only show zone/tournament settings for superadmins */}
+              {adminCheck.isSuperAdmin && (
+                <>
           {/* Zone Information */}
           <Card>
             <CardHeader>
@@ -394,15 +613,19 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Save Button */}
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={loading} className="flex items-center space-x-2">
-              <Save className="h-4 w-4" />
-              <span>{loading ? 'Saving...' : 'Save Settings'}</span>
-            </Button>
+                  {/* Save Button */}
+                  <div className="flex justify-end">
+                    <Button onClick={handleSave} disabled={loading} className="flex items-center space-x-2">
+                      <Save className="h-4 w-4" />
+                      <span>{loading ? 'Saving...' : 'Save Settings'}</span>
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

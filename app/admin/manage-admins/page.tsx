@@ -34,6 +34,7 @@ import {
   Mail,
   MapPin,
   Calendar,
+  Clock,
   CheckCircle,
   XCircle,
   AlertCircle,
@@ -457,15 +458,28 @@ export default function ManageAdminsPage() {
     setSuccess(null)
 
     try {
-      const { db } = await import("@/lib/firebase")
-      const { doc, deleteDoc } = await import("firebase/firestore")
+      // Call API to reject and schedule deletion
+      const response = await fetch("/api/reject-admin-request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          requestId: selectedRequest.requestId,
+          email: selectedRequest.email
+        })
+      })
 
-      await deleteDoc(doc(db, "adminAccessRequests", selectedRequest.requestId))
+      const data = await response.json()
 
-      setSuccess(`Admin access request rejected for ${selectedRequest.email}`)
-      setAdminRequests(adminRequests.filter((r) => r.requestId !== selectedRequest.requestId))
-      setIsRejectDialogOpen(false)
-      setSelectedRequest(null)
+      if (data.success) {
+        setSuccess(`Admin access request rejected for ${selectedRequest.email}. It will be removed in 5 minutes.`)
+        setAdminRequests(adminRequests.filter((r) => r.requestId !== selectedRequest.requestId))
+        setIsRejectDialogOpen(false)
+        setSelectedRequest(null)
+      } else {
+        setError(data.error || "Failed to reject admin request")
+      }
     } catch (error: any) {
       console.error("Error rejecting request:", error)
       setError("Failed to reject admin request: " + error.message)

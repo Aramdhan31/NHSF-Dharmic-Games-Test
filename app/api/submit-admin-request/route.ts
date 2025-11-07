@@ -41,6 +41,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if email already exists as admin or superadmin
+    const emailLower = email.toLowerCase();
+    
+    // Check in admins collection
+    const adminDoc = await adminDb.collection('admins').doc(emailLower).get();
+    if (adminDoc.exists) {
+      return NextResponse.json(
+        { success: false, error: 'This email is already registered as an admin or superadmin' },
+        { status: 400 }
+      );
+    }
+
+    // Check in users collection for admin roles
+    const usersSnapshot = await adminDb.collection('users')
+      .where('email', '==', emailLower)
+      .where('role', 'in', ['admin', 'zone_admin', 'super_admin'])
+      .limit(1)
+      .get();
+
+    if (!usersSnapshot.empty) {
+      return NextResponse.json(
+        { success: false, error: 'This email is already registered as an admin or superadmin' },
+        { status: 400 }
+      );
+    }
+
+    // Check if there's already a pending request for this email
+    const pendingRequestsSnapshot = await adminDb.collection('adminAccessRequests')
+      .where('email', '==', emailLower)
+      .where('status', '==', 'pending')
+      .limit(1)
+      .get();
+
+    if (!pendingRequestsSnapshot.empty) {
+      return NextResponse.json(
+        { success: false, error: 'You already have a pending admin request. Please wait for it to be reviewed.' },
+        { status: 400 }
+      );
+    }
+
     // Hash password (bcrypt)
     const bcrypt = await import('bcryptjs');
     const passwordHash = await bcrypt.hash(password, 10);

@@ -117,8 +117,8 @@ export const universities = [
   { id: "trafford-school", name: "Trafford", zone: "NZ+CZ", sports: ["Badminton", "Football", "Kho Kho", "Netball"],
     teamInfo: { "Badminton": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Football": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Kho Kho": { teamA: { isOpen: true }, teamB: { isOpen: true } }, "Netball": { teamA: { isOpen: true }, teamB: null } },
     members: 0, wins: 0, losses: 0, points: 0, 
-    description: "Trafford School - Competing in North & Central Zone",
-    tournamentDate: "Nov 22, 2025", isCompeting: true, isSchool: true },
+    description: "Trafford Schools Collective - multiple schools competing together under the Trafford banner",
+    tournamentDate: "Nov 22, 2025", isCompeting: true, isSchool: true, isSchoolGroup: true },
 
   // ===== LONDON & SOUTH ZONE (LZ+SZ) - Nov 23, 2025 =====
   // Competing universities only - Sports from tournament table
@@ -376,12 +376,18 @@ function TeamsPageContent() {
   
   console.log('📊 Static competing universities:', staticCompetingUnis.length, staticCompetingUnis.map(u => ({ name: u.name, zone: u.zone, isSchool: (u as any).isSchool })))
   
-  // Create a map of existing universities by name for deduplication
-  const existingUniNames = new Set(universitiesData.map(uni => uni.name.toLowerCase()))
+  const buildUniKey = (name?: string, zone?: string) => {
+    const safeName = (name || "").trim().toLowerCase()
+    const safeZone = (zone || "unknown").trim().toLowerCase()
+    return `${safeName}::${safeZone}`
+  }
+  
+  // Create a map of existing universities (name + zone) for deduplication
+  const existingUniKeys = new Set(universitiesData.map(uni => buildUniKey(uni.name, uni.zone)))
   
   // Add static universities that aren't already in universitiesData
   const staticUnisToAdd = staticCompetingUnis
-    .filter(staticUni => !existingUniNames.has(staticUni.name.toLowerCase()))
+    .filter(staticUni => !existingUniKeys.has(buildUniKey(staticUni.name, staticUni.zone)))
     .map(staticUni => ({
       id: staticUni.id || `static-${staticUni.name.toLowerCase().replace(/\s+/g, '-')}`,
       name: staticUni.name,
@@ -401,7 +407,18 @@ function TeamsPageContent() {
     }))
   
   // Combine Firebase data with static universities
-  const allUniversities = [...universitiesData, ...staticUnisToAdd]
+  const allUniversities = Array.from(
+    [...universitiesData, ...staticUnisToAdd].reduce((acc, uni) => {
+      const key = buildUniKey(uni.name, uni.zone)
+      const existing = acc.get(key)
+      if (!existing) {
+        acc.set(key, uni)
+      } else if (!existing.isRegistered && uni.isRegistered) {
+        acc.set(key, uni)
+      }
+      return acc
+    }, new Map<string, any>()).values()
+  )
   
   console.log('📊 All universities (Firebase + Static):', allUniversities.length)
   console.log('📊 Static universities to add:', staticUnisToAdd.length, staticUnisToAdd.map(u => ({ name: u.name, zone: u.zone, isSchool: u.isSchool })))
@@ -416,13 +433,61 @@ function TeamsPageContent() {
   console.log('📊 Filtered universities:', filteredUniversities.length, 'Selected tournament:', selectedTournament)
   console.log('📊 Filtered universities with schools:', filteredUniversities.filter(u => (u as any).isSchool).map(u => u.name))
 
+  const totalAllUniversities = (() => {
+    const uniqueNames = new Set(allUniversities.map(uni => (uni.name || '').trim().toLowerCase()))
+    return uniqueNames.size
+  })()
+  const totalNZCZUniversities = allUniversities.filter(uni => uni.zone === "NZ+CZ").length
+  const totalLZSZUniversities = allUniversities.filter(uni => uni.zone === "LZ+SZ").length
+
+  const displayUniversities = (() => {
+    if (selectedTournament !== "all") {
+      return filteredUniversities
+    }
+
+    const groupedByName = filteredUniversities.reduce((acc, uni) => {
+      const key = (uni.name || '').trim().toLowerCase()
+      if (!acc.has(key)) {
+        acc.set(key, [])
+      }
+      acc.get(key)!.push(uni)
+      return acc
+    }, new Map<string, any[]>())
+
+    return Array.from(groupedByName.values()).map((group) => {
+      if (group.length === 1) {
+        return group[0]
+      }
+
+      const preferred = group.find((entry: any) => entry.isRegistered) || group[0]
+      const mergedSports = Array.from(new Set(group.flatMap((entry: any) => entry.sports || [])))
+      const mergedTeamInfo = group.reduce((acc: Record<string, any>, entry: any) => ({
+        ...acc,
+        ...(entry.teamInfo || {})
+      }), {})
+      const zonesRepresented = group.map((entry: any) => entry.zone).filter(Boolean)
+      const highlightSports = Array.from(new Set(group.flatMap((entry: any) => ((entry as any).isSpecialCase ? (entry.sports || []) : []))))
+
+      return {
+        ...preferred,
+        zonesRepresented,
+        sports: mergedSports,
+        teamInfo: mergedTeamInfo,
+        highlightSports,
+        isSpecialCase: group.some((entry: any) => (entry as any).isSpecialCase),
+        originalZone: preferred.originalZone || group.find((entry: any) => (entry as any).originalZone)?.originalZone,
+        mergedUniversities: group
+      }
+    })
+  })()
+
   // Count universities that are actually competing (based on isCompeting field or status)
-  const competingUniversitiesList = filteredUniversities.filter(uni => 
+  const competingUniversitiesList = displayUniversities.filter(uni => 
     (uni.isCompeting === true || uni.status === "competing") && !(uni as any).isSchool
   )
   
   // Separate schools from universities
-  const competingSchoolsList = filteredUniversities.filter(uni => {
+  const competingSchoolsList = displayUniversities.filter(uni => {
     const isSchool = (uni as any).isSchool === true
     const isCompeting = (uni.isCompeting === true || uni.status === "competing")
     if (isSchool && isCompeting) {
@@ -434,12 +499,12 @@ function TeamsPageContent() {
   console.log('📊 Competing Schools List:', competingSchoolsList.length, competingSchoolsList.map(s => s.name))
   
   const totalCompetingUniversities = competingUniversitiesList.length
-  const totalRegisteredUniversities = filteredUniversities.length
+  const totalRegisteredUniversities = displayUniversities.length
 
-  const totalPlayers = filteredUniversities.reduce((sum, uni) => sum + (uni.members || 0), 0)
-  const totalWins = filteredUniversities.reduce((sum, uni) => sum + (uni.wins || 0), 0)
-  const totalGames = filteredUniversities.reduce((sum, uni) => sum + (uni.wins || 0) + (uni.losses || 0), 0)
-  const totalPoints = filteredUniversities.reduce((sum, uni) => sum + (uni.points || 0), 0)
+  const totalPlayers = displayUniversities.reduce((sum, uni) => sum + (uni.members || 0), 0)
+  const totalWins = displayUniversities.reduce((sum, uni) => sum + (uni.wins || 0), 0)
+  const totalGames = displayUniversities.reduce((sum, uni) => sum + (uni.wins || 0) + (uni.losses || 0), 0)
+  const totalPoints = displayUniversities.reduce((sum, uni) => sum + (uni.points || 0), 0)
 
   const handleViewDetails = (university: any) => setSelectedUniversity(university)
 
@@ -893,7 +958,7 @@ function TeamsPageContent() {
               }`}
             >
               <Trophy className="w-4 h-4" />
-              <span>All Tournaments ({universitiesData.length})</span>
+              <span>All Tournaments ({totalAllUniversities})</span>
             </Button>
 
             <Button
@@ -906,7 +971,7 @@ function TeamsPageContent() {
               }`}
             >
               <Calendar className="w-4 h-4" />
-              <span>North & Central (Nov 22) ({universitiesData.filter(uni => uni.zone === "NZ+CZ").length})</span>
+              <span>North & Central (Nov 22) ({totalNZCZUniversities})</span>
             </Button>
 
             <Button
@@ -919,14 +984,14 @@ function TeamsPageContent() {
               }`}
             >
               <Calendar className="w-4 h-4" />
-              <span>London & South (Nov 23) ({universitiesData.filter(uni => uni.zone === "LZ+SZ").length})</span>
+              <span>London & South (Nov 23) ({totalLZSZUniversities})</span>
             </Button>
           </div>
 
           {/* Filter Status */}
           <div className="text-center mb-6">
             <p className="text-sm text-gray-600">
-              Showing {filteredUniversities.length} universities
+              Showing {displayUniversities.length} universities
               {selectedTournament !== "all" && ` in ${selectedTournament === "NZ+CZ" ? "North & Central Zone" : "London & South Zone"}`}
             </p>
             
@@ -992,14 +1057,21 @@ function TeamsPageContent() {
             <div className="space-y-12 mb-8 sm:mb-12">
               {/* Competing Universities Section */}
               <div>
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
                   <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                     <Trophy className="w-6 h-6 text-green-600 mr-2" />
                     Competing Universities ({competingUniversitiesList.length})
                   </h2>
-                  <Badge className="bg-green-100 text-green-800 border-green-300">
-                    Active
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-green-100 text-green-800 border-green-300">
+                      Active
+                    </Badge>
+                    {competingSchoolsList.length > 0 && (
+                      <Badge className="bg-purple-50 text-purple-700 border-purple-200">
+                        {competingSchoolsList.length} {competingSchoolsList.length === 1 ? "school team" : "school teams"}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 {competingUniversitiesList.length > 0 ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">

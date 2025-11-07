@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Trophy, Target, MapPin, Calendar, EyeOff, Heart, Bell, Edit3, Check, X, User, Briefcase } from "lucide-react"
+import { Users, Trophy, Target, Calendar, EyeOff, Heart, Check, X, User, Star } from "lucide-react"
 import { useFavoriteUniversities } from "@/hooks/use-local-storage"
 import { useNotifications } from "@/hooks/use-notifications"
 import { updateUniversityStatus } from "@/utils/updateUniversity"
@@ -34,6 +34,9 @@ interface University {
   contactEmail?: string
   contactPhone?: string
   contacts?: ContactInfo[]
+  zonesRepresented?: string[]
+  highlightSports?: string[]
+  isSchoolGroup?: boolean
 }
 
 interface UniversityCardProps {
@@ -46,6 +49,22 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
   const { isFavorite, toggleFavorite } = useFavoriteUniversities()
   const { addNotification } = useNotifications()
   const [isUpdating, setIsUpdating] = useState(false)
+
+  const zonesRepresentedRaw = (university as any).zonesRepresented
+  const zonesRepresented = Array.isArray(zonesRepresentedRaw) && zonesRepresentedRaw.length > 0
+    ? Array.from(new Set(zonesRepresentedRaw))
+    : [university.zone]
+
+  const highlightSportsRaw = (university as any).highlightSports
+  const highlightSportsSet = new Set<string>(
+    Array.isArray(highlightSportsRaw) ? highlightSportsRaw : []
+  )
+
+  if ((university as any).isSpecialCase && highlightSportsSet.size === 0 && university.sports) {
+    highlightSportsSet.add(university.sports[0])
+  }
+
+  const isSchoolGroup = Boolean((university as any).isSchoolGroup)
 
   const getZoneColor = (zone: string) => {
     switch (zone) {
@@ -114,7 +133,14 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
         {/* Mobile-optimized header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
           <div className="flex items-center space-x-3">
-            <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full ${getZoneColor(university.zone)}`}></div>
+            <div className="flex items-center gap-1">
+              {zonesRepresented.map((zone, index) => (
+                <div
+                  key={`${zone}-${index}`}
+                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full ${getZoneColor(zone)}`}
+                ></div>
+              ))}
+            </div>
             <div>
               <div className="flex items-center space-x-2">
                 <CardTitle className="text-lg sm:text-xl">{university.name}</CardTitle>
@@ -127,13 +153,20 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
                   <Heart className={`w-4 h-4 ${isFavorite(university.id) ? 'fill-current' : ''}`} />
                 </Button>
               </div>
-              <div className="flex items-center space-x-2 mt-1">
-                <Badge variant="secondary" className="text-xs">
-                  {getZoneName(university.zone)}
-                </Badge>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                {zonesRepresented.map((zone, index) => (
+                  <Badge key={`${zone}-badge-${index}`} variant="secondary" className="text-xs">
+                    {getZoneName(zone)}
+                  </Badge>
+                ))}
                 {(university as any).isSchool && (
                   <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600 border-purple-300">
                     School
+                  </Badge>
+                )}
+                {isSchoolGroup && (
+                  <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-200">
+                    Multi-school
                   </Badge>
                 )}
                 {university.tournamentDate && (
@@ -167,9 +200,7 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
             <div className="flex items-start space-x-2">
               <span className="text-yellow-600 font-semibold text-sm">ℹ️ Note:</span>
               <p className="text-sm text-yellow-800">
-                {university.name} is a {(university as any).originalZone === "LZ+SZ" ? "London & South Zone" : "North & Central Zone"} university, 
-                but {university.sports && university.sports.length > 0 ? `their ${university.sports[0]}` : "this team"} is competing in {getZoneName(university.zone)} 
-                due to insufficient teams in their original zone.
+                {university.name} originates from {getZoneName((university as any).originalZone)} but is currently competing across {zonesRepresented.map(getZoneName).join(" & ")}. {highlightSportsSet.size > 0 ? `${Array.from(highlightSportsSet).join(', ')} team${highlightSportsSet.size > 1 ? 's' : ''} ` : "This team "}has been temporarily allocated to support competitive balance between the zones.
               </p>
             </div>
           </div>
@@ -324,8 +355,9 @@ export function UniversityCard({ university, onViewDetails, showAdminControls = 
                   const hasBothTeams = hasTeamA && hasTeamB;
                   
                   return (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {sport}{hasBothTeams ? ' (A+B team)' : ''}
+                    <Badge key={index} variant="outline" className="text-xs flex items-center gap-1">
+                      {highlightSportsSet.has(sport) && <Star className="w-3 h-3 text-yellow-500" />}
+                      <span>{sport}{hasBothTeams ? ' (A+B team)' : ''}</span>
                     </Badge>
                   );
                 })}
